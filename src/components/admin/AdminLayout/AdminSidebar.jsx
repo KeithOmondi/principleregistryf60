@@ -46,11 +46,11 @@ const AdminSidebar = () => {
   return (
     <>
       {/* 🔹 Top Bar with Hamburger (visible only on mobile) */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white shadow">
-        <h1 className="text-lg font-bold text-gray-800">Gazette Admin</h1>
+      <div className="md:hidden flex items-center justify-between p-4 bg-[#0a3b1f] text-white shadow">
+        <h1 className="text-lg font-bold">Judiciary Admin</h1>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-gray-700 focus:outline-none"
+          className="text-white focus:outline-none"
         >
           {isOpen ? <MdClose size={28} /> : <MdMenu size={28} />}
         </button>
@@ -62,8 +62,8 @@ const AdminSidebar = () => {
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         {/* Header */}
-        <div className="hidden md:block p-6 border-b border-gray-200 text-xl font-bold text-gray-800">
-          Gazette Admin
+        <div className="hidden md:block p-6 border-b border-gray-200 text-xl font-bold text-[#0a3b1f]">
+          Judiciary Admin
         </div>
 
         {/* Navigation */}
@@ -72,10 +72,12 @@ const AdminSidebar = () => {
             <NavLink
               key={to}
               to={to}
-              onClick={() => setIsOpen(false)} // close menu on mobile after click
+              onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-md font-medium text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition ${
-                  isActive ? "bg-blue-500 text-white" : ""
+                `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition ${
+                  isActive
+                    ? "bg-[#0a3b1f] text-white" // Active link = green
+                    : "text-gray-700 hover:bg-[#f3f3f3] hover:text-[#b48222]" // Hover = gold
                 }`
               }
               end

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAdminStats, fetchBulkStats } from "../../store/slices/adminSlice";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-// ✅ Collapsible reusable section
+// ✅ Collapsible reusable section styled with Judiciary theme
 const CollapsibleSection = ({ title, icon, children }) => {
   const [open, setOpen] = useState(false);
 
@@ -11,7 +11,7 @@ const CollapsibleSection = ({ title, icon, children }) => {
     <div className="mt-8">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+        className="flex items-center justify-between w-full bg-[#0a3b1f] text-white px-4 py-2 rounded-lg hover:bg-[#145c32] transition"
       >
         <div className="flex items-center gap-2 text-lg font-semibold">
           {icon} {title}
@@ -45,34 +45,52 @@ const AdminDashboard = () => {
     error,
   } = useSelector((state) => state.admin);
 
-  // Fetch both record stats and bulk stats
   useEffect(() => {
     dispatch(fetchAdminStats());
     dispatch(fetchBulkStats());
   }, [dispatch]);
 
+  // Judiciary theme applied
   const recordCards = [
-    { title: "Total Records", value: totalRecords, color: "bg-blue-500" },
-    { title: "Approved Records", value: approved, color: "bg-green-500" },
-    { title: "Pending Records", value: pending, color: "bg-yellow-500" },
+    { title: "Total Records", value: totalRecords, color: "bg-[#0a3b1f]" },
+    { title: "Approved Records", value: approved, color: "bg-[#b48222]" },
+    { title: "Pending Records", value: pending, color: "bg-[#0a3b1f]" },
   ];
 
   const bulkCards = [
-    { title: "Total Bulk Cases", value: totalCases, color: "bg-purple-500" },
-    { title: "Total Courts Covered", value: totalCourts, color: "bg-pink-500" },
+    { title: "Total Bulk Cases", value: totalCases, color: "bg-[#b48222]" },
+    { title: "Total Courts Covered", value: totalCourts, color: "bg-[#0a3b1f]" },
   ];
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+    <div
+      className="p-6 min-h-screen bg-cover bg-fixed bg-center"
+      style={{
+        backgroundImage: "url('/assets/judicial-bg.png')", // 🔑 Add a subtle branded background pattern
+        backgroundColor: "#f9f9f9", // fallback
+      }}
+    >
+      {/* Header with Judiciary Logo */}
+      <div className="flex items-center gap-4 mb-8">
+        <img
+          src="https://judiciary.go.ke/wp-content/uploads/2023/05/logo1-Copy-2.png" // 🔑 Place logo in your public/assets folder
+          alt="Judiciary Logo"
+          className="h-16 w-auto"
+        />
+        <h1 className="text-3xl font-bold text-[#0a3b1f]">
+          PR Admin Dashboard
+        </h1>
+      </div>
 
       {/* Record Stats */}
-      <h2 className="text-xl font-semibold mb-4">📊 Records Overview</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#b48222]">
+        📊 Records Overview
+      </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {recordCards.map((c, idx) => (
           <div
             key={idx}
-            className={`${c.color} text-white rounded-lg p-6 shadow-md`}
+            className={`${c.color} text-white rounded-lg p-6 shadow-lg`}
           >
             <h2 className="text-lg font-semibold">{c.title}</h2>
             <p className="text-3xl font-bold">{c.value}</p>
@@ -81,12 +99,14 @@ const AdminDashboard = () => {
       </div>
 
       {/* Bulk Stats */}
-      <h2 className="text-xl font-semibold mb-4">📦 Bulk Gazette Overview</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#b48222]">
+        📦 Bulk Gazette Overview
+      </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {bulkCards.map((c, idx) => (
           <div
             key={idx}
-            className={`${c.color} text-white rounded-lg p-6 shadow-md`}
+            className={`${c.color} text-white rounded-lg p-6 shadow-lg`}
           >
             <h2 className="text-lg font-semibold">{c.title}</h2>
             <p className="text-3xl font-bold">{c.value}</p>
@@ -95,19 +115,19 @@ const AdminDashboard = () => {
       </div>
 
       {/* Collapsible Sections */}
-      <CollapsibleSection title="📚 Cases by Volume">
+      <CollapsibleSection title="📚 Cases by Volume" icon={<ChevronRight />}>
         {byVolume && Object.keys(byVolume).length > 0 ? (
           <div className="bg-white shadow rounded-lg p-4">
             <ul className="divide-y divide-gray-200">
               {Object.entries(byVolume).map(([volume, count]) => (
                 <li
                   key={volume}
-                  className="py-2 flex justify-between items-center hover:bg-gray-50 rounded-md px-2 transition"
+                  className="py-2 flex justify-between items-center hover:bg-[#f1f1f1] rounded-md px-2 transition"
                 >
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-[#0a3b1f]">
                     Volume {volume}
                   </span>
-                  <span className="text-blue-600 font-semibold">
+                  <span className="text-[#b48222] font-semibold">
                     {count} cases
                   </span>
                 </li>
@@ -119,7 +139,7 @@ const AdminDashboard = () => {
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="🕒 Recent Records">
+      <CollapsibleSection title="🕒 Recent Records" icon={<ChevronRight />}>
         {loading ? (
           <p className="text-gray-500">Loading recent records...</p>
         ) : recentRecords.length > 0 ? (
@@ -128,13 +148,13 @@ const AdminDashboard = () => {
               {recentRecords.map((r) => (
                 <li
                   key={r._id}
-                  className="p-4 hover:bg-gray-50 flex justify-between transition"
+                  className="p-4 hover:bg-[#f1f1f1] flex justify-between transition"
                 >
                   <div>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">{r.courtStation}</span>
+                    <p className="text-sm text-[#0a3b1f] font-medium">
+                      {r.courtStation}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-600">
                       Cause: {r.causeNo} | Deceased: {r.nameOfDeceased}
                     </p>
                   </div>
@@ -156,7 +176,10 @@ const AdminDashboard = () => {
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="📰 Recent Bulk Gazette Uploads">
+      <CollapsibleSection
+        title="📰 Recent Bulk Gazette Uploads"
+        icon={<ChevronRight />}
+      >
         {loading ? (
           <p className="text-gray-500">Loading recent bulk...</p>
         ) : recentBulk.length > 0 ? (
@@ -165,20 +188,20 @@ const AdminDashboard = () => {
               {recentBulk.map((b, idx) => (
                 <li
                   key={idx}
-                  className="p-4 hover:bg-gray-50 flex justify-between items-center transition"
+                  className="p-4 hover:bg-[#f1f1f1] flex justify-between items-center transition"
                 >
                   <div>
-                    <p className="font-medium text-gray-700">
+                    <p className="font-medium text-[#0a3b1f]">
                       Volume {b.volumeNo}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-600">
                       Published:{" "}
                       {b.datePublished
                         ? new Date(b.datePublished).toLocaleDateString()
                         : "-"}
                     </p>
                   </div>
-                  <span className="text-blue-600 font-semibold">
+                  <span className="text-[#b48222] font-semibold">
                     {b.totalCases} cases
                   </span>
                 </li>
@@ -191,7 +214,7 @@ const AdminDashboard = () => {
       </CollapsibleSection>
 
       {/* Error handling */}
-      {error && <p className="text-red-500 mt-6">⚠️ {error}</p>}
+      {error && <p className="text-red-600 mt-6 font-semibold">⚠️ {error}</p>}
     </div>
   );
 };

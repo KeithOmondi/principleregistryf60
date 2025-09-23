@@ -63,10 +63,11 @@ const Records = () => {
                 <th className="border p-3 text-left">Court Station</th>
                 <th className="border p-3 text-left">Cause No.</th>
                 <th className="border p-3 text-left">Name of Deceased</th>
-                 <th className="border p-3 text-left">Status</th>
+                 <th className="border p-3 text-left">Form 60 Compliance</th>
+                 <th className="border p-3 text-left">Reason For Rejection</th>
                 <th className="border p-3 text-left">Date Forwarded to G.P</th>
                
-                <th className="border p-3 text-left">Actions</th>
+                
               </tr>
             </thead>
             <tbody>
@@ -89,10 +90,6 @@ const Records = () => {
                   >
                     {r.form60Compliance}
                   </td>
-                  <td className="border p-3">
-                    {r.dateForwardedToGP ? r.dateForwardedToGP.split("T")[0] : "N/A"}
-                  </td>
-                  
                   <td className="border p-3 text-center">
                     {r.form60Compliance === "Rejected" && (
                       <button
@@ -103,6 +100,11 @@ const Records = () => {
                       </button>
                     )}
                   </td>
+                  <td className="border p-3">
+                    {r.dateForwardedToGP ? r.dateForwardedToGP.split("T")[0] : "N/A"}
+                  </td>
+                  
+                  
                 </tr>
               ))}
             </tbody>
