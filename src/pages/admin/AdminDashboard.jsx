@@ -20,7 +20,7 @@ const AdminDashboard = () => {
   const recordCards = [
     { title: "Total Records", value: totalRecords, color: "bg-[#0a3b1f]" },
     { title: "Approved Records", value: approved, color: "bg-[#b48222]" },
-    { title: "Pending Records", value: pending, color: "bg-[#0a3b1f]" },
+    { title: "Rejected Records", value: pending, color: "bg-[#0a3b1f]" },
   ];
 
   return (
