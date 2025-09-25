@@ -1,5 +1,4 @@
 // pages/auth/VerifyOtp.jsx
-
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -30,7 +29,7 @@ export default function VerifyOtp() {
     return () => {
       dispatch(resetAuthState());
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, dispatch, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -42,29 +41,66 @@ export default function VerifyOtp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
-      >
-        <h2 className="text-2xl font-bold mb-4 text-center">Verify OTP</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-[#fefaf6] px-4">
+      <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-8 space-y-6 border border-gray-200">
+        {/* Judiciary Logo */}
+        <div className="flex justify-center mb-4">
+          <img
+            src="https://judiciary.go.ke/wp-content/uploads/2023/05/logo1-Copy-2.png"
+            alt="Judiciary Logo"
+            className="h-14 w-auto"
+          />
+        </div>
 
-        <input
-          type="text"
-          placeholder="Enter OTP"
-          value={otp}
-          onChange={(e) => setOtp(e.target.value)}
-          className="w-full px-3 py-2 border rounded mb-4"
-        />
+        <h2 className="text-2xl font-bold text-center text-[#0a3b1f]">
+          Verify Your OTP
+        </h2>
+        <p className="text-sm text-gray-600 text-center">
+          Enter the 6-digit code sent to <span className="font-medium">{email}</span>.
+        </p>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-          disabled={loading}
-        >
-          {loading ? "Verifying..." : "Verify OTP"}
-        </button>
-      </form>
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label
+              htmlFor="otp"
+              className="block text-sm font-medium text-gray-700"
+            >
+              One-Time Password
+            </label>
+            <input
+              type="text"
+              id="otp"
+              required
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-[#b48222] text-center tracking-widest text-lg"
+              placeholder="••••••"
+              maxLength={6}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full py-2 px-4 rounded-md text-white bg-[#0a3b1f] hover:bg-[#14532d] transition ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {loading ? "Verifying..." : "Verify OTP"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-gray-600">
+          Didn’t receive the code?{" "}
+          <button
+            onClick={() => toast.info("Resend OTP feature coming soon!")}
+            className="text-[#b48222] font-medium hover:underline"
+            type="button"
+          >
+            Resend
+          </button>
+        </p>
+      </div>
     </div>
   );
 }

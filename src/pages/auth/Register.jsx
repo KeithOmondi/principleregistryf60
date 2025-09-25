@@ -29,7 +29,6 @@ const Signup = () => {
     if (error) toast.error(error);
     if (message && !error) {
       toast.success(message);
-      // Navigate to OTP page and pass email as state
       navigate("/verify-otp", { state: { email: formData.email } });
     }
 
@@ -37,15 +36,29 @@ const Signup = () => {
   }, [message, error, navigate, formData.email, dispatch]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-8 space-y-6 border border-gray-200">
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
+    <div className="relative min-h-screen flex items-center justify-center px-4">
+      {/* 🔹 Blurred Judiciary Logo Background */}
+      <div
+        className="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-10 blur-sm"
+        style={{
+          backgroundImage:
+            "url('https://judiciary.go.ke/wp-content/uploads/2023/05/logo1-Copy-2.png')",
+        }}
+      ></div>
+
+      {/* 🔹 Signup Card */}
+      <div className="relative z-10 max-w-md w-full bg-white shadow-2xl rounded-2xl p-8 sm:p-10 space-y-7 border border-[#0a3b1f]/30">
+        <h2 className="text-center text-3xl font-extrabold text-[#0a3b1f]">
           Create Your Account
         </h2>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
+          {/* Full Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-[#0a3b1f] mb-1"
+            >
               Full Name
             </label>
             <input
@@ -54,13 +67,17 @@ const Signup = () => {
               required
               onChange={handleChange}
               value={formData.name}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#b48222] focus:border-[#b48222]"
               placeholder="John Doe"
             />
           </div>
 
+          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-[#0a3b1f] mb-1"
+            >
               Email Address
             </label>
             <input
@@ -69,13 +86,17 @@ const Signup = () => {
               required
               onChange={handleChange}
               value={formData.email}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#b48222] focus:border-[#b48222]"
               placeholder="you@example.com"
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-[#0a3b1f] mb-1"
+            >
               Password
             </label>
             <input
@@ -84,23 +105,32 @@ const Signup = () => {
               required
               onChange={handleChange}
               value={formData.password}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#b48222] focus:border-[#b48222]"
               placeholder="••••••••"
             />
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 rounded-md text-white bg-teal-600 hover:bg-teal-700"
+            className={`w-full py-3 px-4 rounded-lg font-bold text-white shadow-md transition duration-300 ease-in-out ${
+              loading
+                ? "bg-[#0a3b1f]/60 cursor-not-allowed"
+                : "bg-[#0a3b1f] hover:bg-[#085530] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#b48222]"
+            }`}
           >
             {loading ? "Creating Account..." : "Sign Up"}
           </button>
         </form>
 
+        {/* Already have account */}
         <p className="text-center text-sm text-gray-600">
           Already have an account?{" "}
-          <Link to="/login" className="text-teal-600 font-medium hover:underline">
+          <Link
+            to="/login"
+            className="text-[#b48222] font-semibold hover:underline hover:text-[#0a3b1f] transition duration-150 ease-in-out"
+          >
             Log in
           </Link>
         </p>
