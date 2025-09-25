@@ -1,115 +1,95 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchRecords,
-  updateRecord,
+  fetchAllRecordsForAdmin,
   deleteRecord,
   resetRecordState,
 } from "../../store/slices/recordsSlice";
 import { fetchCourts } from "../../store/slices/courtSlice";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import EditRecord from "../../pages/admin/EditRecord";
 
 const RecordPage = () => {
   const dispatch = useDispatch();
-  const { records, loading, error, message } = useSelector(
-    (state) => state.records
-  );
+
+  const {
+    records,
+    totalRecords,
+    currentPage,
+    pageSize,
+    loading,
+    error,
+    message,
+  } = useSelector((state) => state.records);
+
   const { list: courts } = useSelector((state) => state.courts);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [courtFilter, setCourtFilter] = useState("All");
+
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({});
 
-  /* ----------------- Fetch data ----------------- */
+  /* ----------------- Fetch Data ----------------- */
   useEffect(() => {
-    dispatch(fetchRecords());
+    dispatch(fetchAllRecordsForAdmin({ page: 1, limit: 30 }));
     dispatch(fetchCourts());
   }, [dispatch]);
 
-  /* ----------------- Toast & reset ----------------- */
+  /* ----------------- Toast & Reset ----------------- */
   useEffect(() => {
     if (message) {
       toast.success(message);
       dispatch(resetRecordState());
-      dispatch(fetchRecords());
+      dispatch(fetchAllRecordsForAdmin({ page: currentPage, limit: pageSize }));
     }
     if (error) {
       toast.error(error);
       dispatch(resetRecordState());
     }
-  }, [message, error, dispatch]);
+  }, [message, error, dispatch, currentPage, pageSize]);
 
-  /* ----------------- Auto calculate leadTime ----------------- */
-  useEffect(() => {
-    if (formData.dateOfReceipt && formData.dateReceived) {
-      const received = new Date(formData.dateReceived);
-      const receipt = new Date(formData.dateOfReceipt);
+  /* ----------------- Filtering (client-side) ----------------- */
+  const filteredRecords = records.filter((r) => {
+    const searchLower = search.toLowerCase();
 
-      if (!isNaN(received) && !isNaN(receipt)) {
-        const diffDays = Math.ceil(
-          (receipt - received) / (1000 * 60 * 60 * 24)
-        );
-        setFormData((prev) => ({
-          ...prev,
-          leadTime: diffDays >= 0 ? diffDays : 0,
-        }));
-      }
-    }
-  }, [formData.dateOfReceipt, formData.dateReceived]);
+    const matchesSearch =
+      r.nameOfDeceased?.toLowerCase().includes(searchLower) ||
+      r.causeNo?.toLowerCase().includes(searchLower) ||
+      r.courtStation?.name?.toLowerCase().includes(searchLower);
 
-  /* ----------------- Edit ----------------- */
+    const matchesStatus =
+      statusFilter === "All" ? true : r.form60Compliance === statusFilter;
+
+    const matchesCourt =
+      courtFilter === "All" ? true : r.courtStation?._id === courtFilter;
+
+    return matchesSearch && matchesStatus && matchesCourt;
+  });
+
+  /* ----------------- Handlers ----------------- */
+  const handlePageChange = (newPage) => {
+    dispatch(fetchAllRecordsForAdmin({ page: newPage, limit: pageSize }));
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    dispatch(fetchAllRecordsForAdmin({ page: 1, limit: newSize }));
+  };
+
   const handleEditClick = (record) => {
-    setFormData({
-      ...record,
-      courtStation: record.courtStation?._id || "",
-    });
+    setSelectedRecord(record);
     setEditMode(true);
   };
 
-  const handleUpdate = (e) => {
-    e.preventDefault();
-    if (
-      formData.form60Compliance === "Rejected" &&
-      !formData.rejectionReason?.trim()
-    ) {
-      toast.error("⚠️ Please provide a rejection reason");
-      return;
-    }
-    dispatch(updateRecord({ id: formData._id, recordData: formData })).then(
-      () => setEditMode(false)
-    );
-  };
-
-  /* ----------------- Delete ----------------- */
   const handleDelete = (id) => {
     if (window.confirm("⚠️ Are you sure you want to delete this record?")) {
       dispatch(deleteRecord(id));
     }
   };
 
-  /* ----------------- Filtering ----------------- */
-const filteredRecords = records.filter((r) => {
-  const searchLower = search.toLowerCase();
-
-  const matchesSearch =
-    r.nameOfDeceased?.toLowerCase().includes(searchLower) ||
-    r.causeNo?.toLowerCase().includes(searchLower) ||
-    r.courtStation?.name?.toLowerCase().includes(searchLower);
-
-  const matchesStatus =
-    statusFilter === "All" ? true : r.form60Compliance === statusFilter;
-
-  const matchesCourt =
-    courtFilter === "All" ? true : r.courtStation?._id === courtFilter;
-
-  return matchesSearch && matchesStatus && matchesCourt;
-});
-
-
+  /* ----------------- UI ----------------- */
   if (loading) return <p className="p-4">Loading records...</p>;
 
   return (
@@ -162,6 +142,7 @@ const filteredRecords = records.filter((r) => {
           <table className="min-w-full border-collapse">
             <thead className="bg-[#0a2342] text-white">
               <tr>
+                <th className="border p-3 text-left">#</th>
                 <th className="border p-3 text-left">Court Station</th>
                 <th className="border p-3 text-left">Cause No.</th>
                 <th className="border p-3 text-left">Name of Deceased</th>
@@ -171,6 +152,7 @@ const filteredRecords = records.filter((r) => {
                 <th className="border p-3 text-left">Form 60 Compliance</th>
                 <th className="border p-3 text-left">Reason For Rejection</th>
                 <th className="border p-3 text-left">Date Forwarded to G.P.</th>
+                <th className="border p-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -181,6 +163,9 @@ const filteredRecords = records.filter((r) => {
                     idx % 2 === 0 ? "bg-white" : "bg-gray-100"
                   } hover:bg-[#b48222]/10 transition`}
                 >
+                  <td className="border p-3">
+                    {(currentPage - 1) * pageSize + idx + 1}
+                  </td>
                   <td className="border p-3">{r.courtStation?.name || "N/A"}</td>
                   <td className="border p-3">{r.causeNo}</td>
                   <td className="border p-3 font-semibold text-[#0a2342]">
@@ -204,6 +189,16 @@ const filteredRecords = records.filter((r) => {
                   >
                     {r.form60Compliance}
                   </td>
+                  <td className="border p-3">
+                    {r.form60Compliance === "Rejected"
+                      ? r.rejectionReason || "N/A"
+                      : "-"}
+                  </td>
+                  <td className="border p-3">
+                    {r.dateForwardedToGP
+                      ? r.dateForwardedToGP.split("T")[0]
+                      : "N/A"}
+                  </td>
                   <td className="border p-3 text-center space-x-3">
                     <button
                       onClick={() => handleEditClick(r)}
@@ -217,19 +212,6 @@ const filteredRecords = records.filter((r) => {
                     >
                       Delete
                     </button>
-                    {r.form60Compliance === "Rejected" && (
-                      <button
-                        onClick={() => setSelectedRecord(r)}
-                        className="text-gray-700 hover:underline"
-                      >
-                        View Reason
-                      </button>
-                    )}
-                  </td>
-                  <td className="border p-3">
-                    {r.dateForwardedToGP
-                      ? r.dateForwardedToGP.split("T")[0]
-                      : "N/A"}
                   </td>
                 </tr>
               ))}
@@ -238,30 +220,43 @@ const filteredRecords = records.filter((r) => {
         </div>
       )}
 
-      {/* Rejection Modal */}
-      {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-red-500 bg-white p-6 shadow-2xl sm:w-96">
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-red-700">
-                Rejection Reason
-              </h3>
-              <span className="text-2xl">❌</span>
-            </div>
-            <hr className="my-3 border-t border-red-300" />
-            <p className="text-gray-800 leading-relaxed">
-              {selectedRecord.rejectionReason ||
-                "No reason was provided for this rejection."}
-            </p>
-            <button
-              onClick={() => setSelectedRecord(null)}
-              className="mt-4 w-full rounded-lg bg-red-700 px-4 py-2 text-white font-semibold hover:bg-red-800"
-            >
-              Close
-            </button>
-          </div>
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center mt-6">
+        <div>
+          <label className="mr-2">Rows per page:</label>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="border rounded p-1"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={30}>30</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
         </div>
-      )}
+
+        <div className="flex space-x-2">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span>
+            Page {currentPage} of {Math.ceil(totalRecords / pageSize)}
+          </span>
+          <button
+            disabled={currentPage >= Math.ceil(totalRecords / pageSize)}
+            onClick={() => handlePageChange(currentPage + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       {/* Edit Modal */}
       {editMode && (
@@ -270,8 +265,12 @@ const filteredRecords = records.filter((r) => {
             <h3 className="text-xl font-bold mb-4 text-[#0a2342]">
               ✏️ Edit Record
             </h3>
-            {/* TODO: reuse AddRecord form */}
-            <p className="text-gray-500">Edit form goes here...</p>
+
+            <EditRecord
+              record={selectedRecord}
+              onClose={() => setEditMode(false)}
+            />
+
             <button
               onClick={() => setEditMode(false)}
               className="mt-4 bg-[#0a2342] text-white px-4 py-2 rounded-lg hover:bg-[#0a2342]/90"

@@ -1,57 +1,29 @@
-import React, { useState, useEffect } from "react";
+// src/pages/admin/AddRecord.jsx
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addRecord, resetRecordState } from "../../store/slices/recordsSlice";
 import { fetchCourts } from "../../store/slices/courtSlice";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import "react-toastify/dist/ReactToastify.css";
 
 const rejectionReasons = [
-  "No Stamp or Seal/Note Dated",
-  "Conflicting Case Number between the E Citizen Print Receipt and the Form 60 Notice",
-  "Lack of Deputy and or District Registrars' Signature and Name",
-  "Prepare a corrigenda",
-  "Proof of gazette fees payment not attached NO receipt attached",
-  "No Case Number on Form 60 and/or Government Printer Receipt",
-  "Lack of Petitioner(s) name and or deceased name in the Form 60 Notice",
-  "Attach original bankslip and not a photocopy unless paid via ECitizen platform",
-  "Same deceased details in two different case numbers within submitted Notices from the Station",
-  "Not indicating whether the matter is testate or intestate",
-  "Same case number with two different petitioners and or deceased names",
-  "Deputy registrar and or District Registrar name not typed",
-  "Receipt mismatch/wrong receipt",
-  "Bankers’ cheques be addressed to Government Printers and not Kenya Gazette",
-  "Altered Form 60 Notice",
-  "One deceased per petition (there is more than one deceased in this case)",
-  "The District Registrar and or District Registrar Notices should not be signed for",
-  "Different Court Stations in one Form 60 notice",
-  "Attach the Govt. receipt copy and NOT the customer copy for the E-citizen payments",
-  "Form 60 Notice missing the date of Death of the Deceased Persons",
-  "Rejected from the Govt. Printers due to being sent directly to their offices",
-  "Attach the original Form 60 notice NOT a copy",
-  "Form 60 notice without a receipt (attach proof of payment)",
-  "Duplicate/Photocopy of Form 60",
-  "FORM 60 missing",
-  "Error is from Court of origin. Make fresh payments and prepare a corrigenda",
-  "Two Deceased in one Form 60",
-  "Kindly confirm the deceased name (deceased name and petitoner's name are similar)",
+  // ... your array of rejection reasons ...
 ];
 
 const AddRecord = () => {
   const dispatch = useDispatch();
-  const { loading, error, message } = useSelector((state) => state.records);
-  const {
-    list: courts,
-    loading: courtsLoading,
-    error: courtsError,
-  } = useSelector((state) => state.courts);
+  const { list: courts, loading: courtsLoading } = useSelector(
+    (state) => state.courts
+  );
+  const { loading, message, error } = useSelector((state) => state.records);
 
   const [formData, setFormData] = useState({
     courtStation: "",
     causeNo: "",
     nameOfDeceased: "",
     dateReceived: "",
-    dateOfReceipt: "",
+    dateOfReceipt: "", // optional
     leadTime: 0,
     dateForwardedToGP: "",
     form60Compliance: "Approved",
@@ -59,57 +31,50 @@ const AddRecord = () => {
     customRejection: "",
   });
 
-  // Fetch courts on mount
+  // Fetch courts if not loaded
   useEffect(() => {
-    dispatch(fetchCourts());
-  }, [dispatch]);
+    if (!courts.length) dispatch(fetchCourts());
+  }, [dispatch, courts.length]);
 
+  const courtOptions = useMemo(
+    () => courts.map((c) => ({ value: c._id, label: c.name })),
+    [courts]
+  );
+
+  // Auto-calc lead time (only if dateOfReceipt is provided)
   // Auto-calc lead time
-  // Auto-calc lead time (always positive, even if dates reversed)
-  useEffect(() => {
-    if (formData.dateReceived && formData.dateOfReceipt) {
-      const received = new Date(formData.dateReceived);
-      const receipt = new Date(formData.dateOfReceipt);
+useEffect(() => {
+  const { dateReceived, dateOfReceipt } = formData;
+  if (dateReceived) {
+    const received = new Date(dateReceived);
+    if (!isNaN(received)) {
+      let diffDays = 0;
 
-      if (!isNaN(received) && !isNaN(receipt)) {
-        const diffDays = Math.abs(
-          Math.ceil((receipt - received) / (1000 * 60 * 60 * 24))
-        );
-        setFormData((prev) => ({ ...prev, leadTime: diffDays }));
+      if (dateOfReceipt) {
+        const receipt = new Date(dateOfReceipt);
+        if (!isNaN(receipt)) {
+          diffDays = Math.abs(Math.ceil((receipt - received) / (1000 * 60 * 60 * 24)));
+        }
       }
-    }
-  }, [formData.dateReceived, formData.dateOfReceipt]);
 
-  // Toast + reset
-  useEffect(() => {
-    if (message) {
-      toast.success(message);
-      setFormData({
-        courtStation: "",
-        causeNo: "",
-        nameOfDeceased: "",
-        dateReceived: "",
-        dateOfReceipt: "",
-        leadTime: 0,
-        dateForwardedToGP: "",
-        form60Compliance: "Approved",
-        rejectionReason: "",
-        customRejection: "",
-      });
-      dispatch(resetRecordState());
-    }
-    if (error) {
-      toast.error(error);
-      dispatch(resetRecordState());
-    }
-  }, [message, error, dispatch]);
+      // Optional: if dateOfReceipt is missing, you could calculate leadTime up to today:
+      // else {
+      //   const today = new Date();
+      //   diffDays = Math.abs(Math.ceil((today - received) / (1000 * 60 * 60 * 24)));
+      // }
 
-  const handleChange = (e) => {
+      setFormData((prev) => ({ ...prev, leadTime: diffDays }));
+    }
+  }
+}, [formData.dateReceived, formData.dateOfReceipt]);
+
+
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const {
@@ -117,7 +82,7 @@ const AddRecord = () => {
       causeNo,
       nameOfDeceased,
       dateReceived,
-      dateOfReceipt,
+      dateOfReceipt, // optional
       dateForwardedToGP,
       form60Compliance,
       rejectionReason,
@@ -125,13 +90,8 @@ const AddRecord = () => {
       leadTime,
     } = formData;
 
-    if (
-      !courtStation ||
-      !causeNo ||
-      !nameOfDeceased ||
-      !dateReceived ||
-      !dateOfReceipt
-    ) {
+    // Only required fields
+    if (!courtStation || !causeNo || !nameOfDeceased || !dateReceived) {
       toast.error("⚠️ Please fill in all required fields");
       return;
     }
@@ -150,25 +110,54 @@ const AddRecord = () => {
         finalRejectionReason = customRejection.trim();
     }
 
-    dispatch(
-      addRecord({
-        courtStation,
-        causeNo,
-        nameOfDeceased,
-        dateReceived,
-        dateOfReceipt,
-        leadTime,
-        dateForwardedToGP,
-        form60Compliance,
-        rejectionReason: finalRejectionReason,
-      })
-    );
+    try {
+      await dispatch(
+        addRecord({
+          courtStation,
+          causeNo,
+          nameOfDeceased,
+          dateReceived,
+          ...(dateOfReceipt ? { dateOfReceipt } : {}), // optional
+          leadTime,
+          dateForwardedToGP,
+          form60Compliance,
+          rejectionReason: finalRejectionReason,
+        })
+      ).unwrap();
+
+      setFormData({
+        courtStation: "",
+        causeNo: "",
+        nameOfDeceased: "",
+        dateReceived: "",
+        dateOfReceipt: "",
+        leadTime: 0,
+        dateForwardedToGP: "",
+        form60Compliance: "Approved",
+        rejectionReason: "",
+        customRejection: "",
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  // Show toast messages
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+      dispatch(resetRecordState());
+    }
+    if (error) {
+      toast.error(error);
+      dispatch(resetRecordState());
+    }
+  }, [message, error, dispatch]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#C5A572] to-[#2E2E2E] p-8">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-8 space-y-8">
-        <ToastContainer position="top-right" autoClose={3000} />
         <h2 className="text-2xl font-bold mb-6 text-[#2E2E2E]">
           ✍️ Add New Court Record
         </h2>
@@ -177,46 +166,31 @@ const AddRecord = () => {
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-5"
         >
-          {/* Court Station Dropdown */}
+          {/* Court Station */}
           <div>
-  <label className="block mb-1 font-medium text-[#2E2E2E]">
-    Court Station
-  </label>
-  <Select
-    options={courts.map((court) => ({
-      value: court._id,
-      label: court.name,
-    }))}
-    isLoading={courtsLoading}
-    isClearable
-    placeholder="Search or select a court..."
-    value={
-      formData.courtStation
-        ? {
-            value: formData.courtStation,
-            label:
-              courts.find((c) => c._id === formData.courtStation)?.name || "",
-          }
-        : null
-    }
-    onChange={(selected) =>
-      setFormData((prev) => ({
-        ...prev,
-        courtStation: selected ? selected.value : "",
-      }))
-    }
-    styles={{
-      control: (base) => ({
-        ...base,
-        borderColor: "#ccc",
-        borderRadius: "0.5rem",
-        padding: "2px",
-      }),
-    }}
-  />
-</div>
+            <label className="block mb-1 font-medium text-[#2E2E2E]">
+              Court Station
+            </label>
+            <Select
+              options={courtOptions}
+              isLoading={courtsLoading}
+              isClearable
+              placeholder="Search or select a court..."
+              value={
+                formData.courtStation
+                  ? courtOptions.find((c) => c.value === formData.courtStation)
+                  : null
+              }
+              onChange={(selected) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  courtStation: selected ? selected.value : "",
+                }))
+              }
+            />
+          </div>
 
-          {/* Cause No. */}
+          {/* Cause No */}
           <div>
             <label className="block mb-1 font-medium text-[#2E2E2E]">
               Cause No.
@@ -261,10 +235,10 @@ const AddRecord = () => {
             />
           </div>
 
-          {/* Date of Receipt */}
+          {/* Date of Receipt (optional) */}
           <div>
             <label className="block mb-1 font-medium text-[#2E2E2E]">
-              Date of Receipt
+              Date of Receipt (Optional)
             </label>
             <input
               type="date"
@@ -272,7 +246,6 @@ const AddRecord = () => {
               value={formData.dateOfReceipt}
               onChange={handleChange}
               className="w-full border px-3 py-2 rounded"
-              required
             />
           </div>
 
@@ -314,14 +287,13 @@ const AddRecord = () => {
               value={formData.form60Compliance}
               onChange={handleChange}
               className="w-full border px-3 py-2 rounded"
-              required
             >
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
             </select>
           </div>
 
-          {/* Rejection Reasons */}
+          {/* Rejection Reason */}
           {formData.form60Compliance === "Rejected" && (
             <div className="md:col-span-2">
               <label className="block mb-1 font-medium text-red-600">
@@ -358,17 +330,15 @@ const AddRecord = () => {
           )}
 
           {/* Submit */}
-          <div className="md:col-span-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full bg-[#2E2E2E] hover:bg-[#C5A572] text-white px-6 py-2 rounded font-semibold transition-colors ${
-                loading ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-            >
-              {loading ? "Adding..." : "Add Record"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full bg-[#2E2E2E] hover:bg-[#C5A572] text-white px-6 py-2 rounded font-semibold transition-colors ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {loading ? "Adding..." : "Add Record"}
+          </button>
         </form>
       </div>
     </div>
