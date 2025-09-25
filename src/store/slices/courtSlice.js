@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000/api/v1/courts";
+const BASE_URL = "https://principle-registry.onrender.com/api/v1/courts";
 
 const initialState = {
   list: [],

@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const BULK_API = "http://localhost:8000/api/v1/bulk";
+const BULK_API = "https://principle-registry.onrender.com/api/v1/bulk";
 
 // Fetch all bulk records
 export const fetchBulkRecords = createAsyncThunk(
