@@ -4,6 +4,7 @@ import { addRecord, resetRecordState } from "../../store/slices/recordsSlice";
 import { fetchCourts } from "../../store/slices/courtSlice";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Select from "react-select";
 
 const rejectionReasons = [
   "No Stamp or Seal/Note Dated",
@@ -178,27 +179,42 @@ const AddRecord = () => {
         >
           {/* Court Station Dropdown */}
           <div>
-            <label className="block mb-1 font-medium text-[#2E2E2E]">
-              Court Station
-            </label>
-            <select
-              name="courtStation"
-              value={formData.courtStation}
-              onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
-              required
-            >
-              <option value="">-- Select Court Station --</option>
-              {courtsLoading && <option>Loading...</option>}
-              {courtsError && <option disabled>Error loading courts</option>}
-              {!courtsLoading &&
-                courts.map((court) => (
-                  <option key={court._id} value={court._id}>
-                    {court.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+  <label className="block mb-1 font-medium text-[#2E2E2E]">
+    Court Station
+  </label>
+  <Select
+    options={courts.map((court) => ({
+      value: court._id,
+      label: court.name,
+    }))}
+    isLoading={courtsLoading}
+    isClearable
+    placeholder="Search or select a court..."
+    value={
+      formData.courtStation
+        ? {
+            value: formData.courtStation,
+            label:
+              courts.find((c) => c._id === formData.courtStation)?.name || "",
+          }
+        : null
+    }
+    onChange={(selected) =>
+      setFormData((prev) => ({
+        ...prev,
+        courtStation: selected ? selected.value : "",
+      }))
+    }
+    styles={{
+      control: (base) => ({
+        ...base,
+        borderColor: "#ccc",
+        borderRadius: "0.5rem",
+        padding: "2px",
+      }),
+    }}
+  />
+</div>
 
           {/* Cause No. */}
           <div>

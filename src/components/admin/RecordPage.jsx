@@ -19,6 +19,7 @@ const RecordPage = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [courtFilter, setCourtFilter] = useState("All");
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
@@ -91,14 +92,23 @@ const RecordPage = () => {
   };
 
   /* ----------------- Filtering ----------------- */
-  const filteredRecords = records.filter((r) => {
-    const matchesSearch =
-      r.nameOfDeceased?.toLowerCase().includes(search.toLowerCase()) ||
-      r.causeNo?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" ? true : r.form60Compliance === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+const filteredRecords = records.filter((r) => {
+  const searchLower = search.toLowerCase();
+
+  const matchesSearch =
+    r.nameOfDeceased?.toLowerCase().includes(searchLower) ||
+    r.causeNo?.toLowerCase().includes(searchLower) ||
+    r.courtStation?.name?.toLowerCase().includes(searchLower);
+
+  const matchesStatus =
+    statusFilter === "All" ? true : r.form60Compliance === statusFilter;
+
+  const matchesCourt =
+    courtFilter === "All" ? true : r.courtStation?._id === courtFilter;
+
+  return matchesSearch && matchesStatus && matchesCourt;
+});
+
 
   if (loading) return <p className="p-4">Loading records...</p>;
 
@@ -110,15 +120,16 @@ const RecordPage = () => {
         📜 Judicial Records
       </h2>
 
-      {/* Search & Filter */}
+      {/* Search & Filters */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
         <input
           type="text"
           placeholder="🔍 Search by Name or Cause No..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full md:w-1/2 p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+          className="w-full md:w-1/3 p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b48222]"
         />
+
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -127,6 +138,19 @@ const RecordPage = () => {
           <option value="All">All Status</option>
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
+        </select>
+
+        <select
+          value={courtFilter}
+          onChange={(e) => setCourtFilter(e.target.value)}
+          className="p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+        >
+          <option value="All">All Courts</option>
+          {courts.map((court) => (
+            <option key={court._id} value={court._id}>
+              {court.name}
+            </option>
+          ))}
         </select>
       </div>
 
