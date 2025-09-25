@@ -140,7 +140,7 @@ const RecordPage = () => {
       ) : (
         <div className="overflow-x-auto shadow-lg rounded-2xl border border-[#0a2342]/20">
           <table className="min-w-full border-collapse">
-            <thead className="bg-[#0a2342] text-white">
+            <thead className="bg-[#0a3b1f] text-white">
               <tr>
                 <th className="border p-3 text-left">#</th>
                 <th className="border p-3 text-left">Court Station</th>
