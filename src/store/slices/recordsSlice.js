@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const RECORD_API = "https://principle-registry.onrender.com/api/v1/records";
+const RECORD_API = "http://localhost:8000/api/v1/records";
 
 /* ------------------------- ASYNC THUNKS ------------------------- */
 

@@ -45,8 +45,8 @@ const AdminSidebar = () => {
 
   return (
     <>
-      {/* 🔹 Top Bar with Hamburger (visible only on mobile) */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-[#0a3b1f] text-white shadow">
+      {/* 🔹 Mobile Top Bar (sticky at top) */}
+      <div className="md:hidden sticky top-0 left-0 z-50 flex items-center justify-between p-4 bg-[#0a3b1f] text-white shadow">
         <h1 className="text-lg font-bold">Judiciary Admin</h1>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -58,16 +58,17 @@ const AdminSidebar = () => {
 
       {/* 🔹 Sidebar */}
       <aside
-        className={`fixed md:static top-0 left-0 h-full w-64 bg-white shadow-md transform transition-transform duration-300 z-50
-          ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        className={`fixed md:sticky top-0 left-0 h-full md:h-screen w-64 bg-white shadow-md transform transition-transform duration-300 
+        ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
+        z-40`}
       >
-        {/* Header */}
+        {/* Header (desktop only) */}
         <div className="hidden md:block p-6 border-b border-gray-200 text-xl font-bold text-[#0a3b1f]">
           Judiciary Admin
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col p-4 space-y-2 flex-grow">
+        <nav className="flex flex-col p-4 space-y-2 flex-grow overflow-y-auto">
           {navLinks.map(({ to, label, icon }) => (
             <NavLink
               key={to}
@@ -76,8 +77,8 @@ const AdminSidebar = () => {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition ${
                   isActive
-                    ? "bg-[#0a3b1f] text-white" // Active link = green
-                    : "text-gray-700 hover:bg-[#f3f3f3] hover:text-[#b48222]" // Hover = gold
+                    ? "bg-[#0a3b1f] text-white"
+                    : "text-gray-700 hover:bg-[#f3f3f3] hover:text-[#b48222]"
                 }`
               }
               end

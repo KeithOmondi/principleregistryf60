@@ -3,7 +3,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE || "https://principle-registry.onrender.com/api/v1/gazette";
+  import.meta.env.VITE_API_BASE || "http://localhost:8000/api/v1/gazette";
 
 // ------------------ Async Thunks ------------------
 
