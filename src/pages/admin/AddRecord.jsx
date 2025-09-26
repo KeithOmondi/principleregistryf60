@@ -8,7 +8,34 @@ import Select from "react-select";
 import "react-toastify/dist/ReactToastify.css";
 
 const rejectionReasons = [
-  // ... your array of rejection reasons ...
+  "No Stamp or Seal/Note Dated",
+  "Conflicting Case Number between the E Citizen Print Receipt and the Form 60 Notice",
+  "Lack of Deputy and or District Registrars' Signature and Name",
+  "Prepare a corrigenda",
+  "Proof of gazette fees payment not attached NO receipt attached",
+  "No Case Number on Form 60 and/or Government Printer Receipt",
+  "Lack of Petitioner(s) name and or deceased name in the Form 60 Notice",
+  "Attach original bankslip and not a photocopy unless paid via ECitizen platform",
+  "Same deceased details in two different case numbers within submitted Notices from the Station",
+  "Not indicating whether the matter is testate or intestate",
+  "Same case number with two different petitioners and or deceased names",
+  "Deputy registrar and or District Registrar name not typed",
+  "Receipt mismatch/wrong receipt",
+  "Bankers’ cheques be addressed to Government Printers and not Kenya Gazette",
+  "Altered Form 60 Notice",
+  "One deceased per petition (there is more than one deceased in this case)",
+  "The District Registrar and or District Registrar Notices should not be signed for",
+  "Different Court Stations in one Form 60 notice",
+  "Attach the Govt. receipt copy and NOT the customer copy for the E-citizen payments",
+  "Form 60 Notice missing the date of Death of the Deceased Persons",
+  "Rejected from the Govt. Printers due to being sent directly to their offices",
+  "Attach the original Form 60 notice NOT a copy",
+  "Form 60 notice without a receipt (attach proof of payment)",
+  "Duplicate/Photocopy of Form 60",
+  "FORM 60 missing",
+  "Error is from Court of origin. Make fresh payments and prepare a corrigenda",
+  "Two Deceased in one Form 60",
+  "Kindly confirm the deceased name (deceased name and petitoner's name are similar)",
 ];
 
 const AddRecord = () => {
@@ -43,31 +70,32 @@ const AddRecord = () => {
 
   // Auto-calc lead time (only if dateOfReceipt is provided)
   // Auto-calc lead time
-useEffect(() => {
-  const { dateReceived, dateOfReceipt } = formData;
-  if (dateReceived) {
-    const received = new Date(dateReceived);
-    if (!isNaN(received)) {
-      let diffDays = 0;
+  useEffect(() => {
+    const { dateReceived, dateOfReceipt } = formData;
+    if (dateReceived) {
+      const received = new Date(dateReceived);
+      if (!isNaN(received)) {
+        let diffDays = 0;
 
-      if (dateOfReceipt) {
-        const receipt = new Date(dateOfReceipt);
-        if (!isNaN(receipt)) {
-          diffDays = Math.abs(Math.ceil((receipt - received) / (1000 * 60 * 60 * 24)));
+        if (dateOfReceipt) {
+          const receipt = new Date(dateOfReceipt);
+          if (!isNaN(receipt)) {
+            diffDays = Math.abs(
+              Math.ceil((receipt - received) / (1000 * 60 * 60 * 24))
+            );
+          }
         }
+
+        // Optional: if dateOfReceipt is missing, you could calculate leadTime up to today:
+        // else {
+        //   const today = new Date();
+        //   diffDays = Math.abs(Math.ceil((today - received) / (1000 * 60 * 60 * 24)));
+        // }
+
+        setFormData((prev) => ({ ...prev, leadTime: diffDays }));
       }
-
-      // Optional: if dateOfReceipt is missing, you could calculate leadTime up to today:
-      // else {
-      //   const today = new Date();
-      //   diffDays = Math.abs(Math.ceil((today - received) / (1000 * 60 * 60 * 24)));
-      // }
-
-      setFormData((prev) => ({ ...prev, leadTime: diffDays }));
     }
-  }
-}, [formData.dateReceived, formData.dateOfReceipt]);
-
+  }, [formData.dateReceived, formData.dateOfReceipt]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
