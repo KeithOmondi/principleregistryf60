@@ -1,3 +1,4 @@
+// pages/auth/Signup.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
@@ -7,8 +8,7 @@ import { toast } from "react-toastify";
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const { loading, error, message } = useSelector((state) => state.auth);
+  const { loading, error, message, pendingEmail } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -20,24 +20,25 @@ const Signup = () => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(register(formData));
   };
 
   useEffect(() => {
     if (error) toast.error(error);
-    if (message && !error) {
+    if (message && pendingEmail) {
       toast.success(message);
-      navigate("/verify-otp", { state: { email: formData.email } });
+      navigate("/verify-otp");
     }
-
-    return () => dispatch(resetAuthState());
-  }, [message, error, navigate, formData.email, dispatch]);
+    return () => {
+      dispatch(resetAuthState());
+    };
+  }, [message, error, pendingEmail, navigate, dispatch]);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4">
-      {/* 🔹 Blurred Judiciary Logo Background */}
+      {/* Blurred Judiciary Logo Background */}
       <div
         className="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-10 blur-sm"
         style={{
@@ -46,7 +47,7 @@ const Signup = () => {
         }}
       ></div>
 
-      {/* 🔹 Signup Card */}
+      {/* Signup Card */}
       <div className="relative z-10 max-w-md w-full bg-white shadow-2xl rounded-2xl p-8 sm:p-10 space-y-7 border border-[#0a3b1f]/30">
         <h2 className="text-center text-3xl font-extrabold text-[#0a3b1f]">
           Create Your Account
@@ -55,10 +56,7 @@ const Signup = () => {
         <form className="space-y-5" onSubmit={handleSubmit}>
           {/* Full Name */}
           <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-[#0a3b1f] mb-1"
-            >
+            <label htmlFor="name" className="block text-sm font-medium text-[#0a3b1f] mb-1">
               Full Name
             </label>
             <input
@@ -74,10 +72,7 @@ const Signup = () => {
 
           {/* Email */}
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-[#0a3b1f] mb-1"
-            >
+            <label htmlFor="email" className="block text-sm font-medium text-[#0a3b1f] mb-1">
               Email Address
             </label>
             <input
@@ -93,10 +88,7 @@ const Signup = () => {
 
           {/* Password */}
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-[#0a3b1f] mb-1"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-[#0a3b1f] mb-1">
               Password
             </label>
             <input

@@ -1,19 +1,16 @@
 // pages/auth/VerifyOtp.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
-import { otpVerification, resetAuthState } from "../../store/slices/authSlice";
+import { useNavigate } from "react-router-dom";
+import { otpVerification, resetAuthState, clearPendingEmail } from "../../store/slices/authSlice";
 import { toast } from "react-toastify";
 
 export default function VerifyOtp() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [otp, setOtp] = useState("");
-  const email = location.state?.email;
-
-  const { isAuthenticated, loading, error, message } = useSelector(
+  const { isAuthenticated, loading, error, message, pendingEmail } = useSelector(
     (state) => state.auth
   );
 
@@ -24,20 +21,21 @@ export default function VerifyOtp() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      dispatch(clearPendingEmail());
       navigate("/dashboard");
     }
     return () => {
       dispatch(resetAuthState());
     };
-  }, [isAuthenticated, dispatch, navigate]);
+  }, [isAuthenticated, navigate, dispatch]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!otp || !email) {
+    if (!otp || !pendingEmail) {
       toast.error("Email and OTP are required.");
       return;
     }
-    dispatch(otpVerification({ email, otp }));
+    dispatch(otpVerification({ email: pendingEmail, otp }));
   };
 
   return (
@@ -56,15 +54,12 @@ export default function VerifyOtp() {
           Verify Your OTP
         </h2>
         <p className="text-sm text-gray-600 text-center">
-          Enter the 6-digit code sent to <span className="font-medium">{email}</span>.
+          Enter the 6-digit code sent to <span className="font-medium">{pendingEmail}</span>.
         </p>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
-            <label
-              htmlFor="otp"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
               One-Time Password
             </label>
             <input

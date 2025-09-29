@@ -1,3 +1,4 @@
+// store/slices/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -16,23 +17,27 @@ const initialState = {
   loading: false,
   error: null,
   message: null,
+  pendingEmail: null, // <-- used for OTP verification step
 };
 
 // ==========================
 // Async Thunks
 // ==========================
+
+// Register
 export const register = createAsyncThunk(
   "auth/register",
   async (data, { rejectWithValue }) => {
     try {
       const res = await axios.post(`${AUTH_API}/register`, data);
-      return { message: res.data.message };
+      return { message: res.data.message, pendingEmail: data.email };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Registration failed");
     }
   }
 );
 
+// Verify OTP
 export const otpVerification = createAsyncThunk(
   "auth/verifyOtp",
   async ({ email, otp }, { rejectWithValue }) => {
@@ -42,6 +47,7 @@ export const otpVerification = createAsyncThunk(
         user: res.data.user,
         isAuthenticated: true,
         message: res.data.message,
+        pendingEmail: null, // clear pendingEmail once verified
       };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "OTP verification failed");
@@ -49,6 +55,7 @@ export const otpVerification = createAsyncThunk(
   }
 );
 
+// Login
 export const login = createAsyncThunk(
   "auth/login",
   async (data, { rejectWithValue }) => {
@@ -65,18 +72,20 @@ export const login = createAsyncThunk(
   }
 );
 
+// Logout
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.get(`${AUTH_API}/logout`);
-      return { message: res.data.message };
+      return { message: res.data.message, user: null, isAuthenticated: false };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Logout failed");
     }
   }
 );
 
+// Load User (session restore)
 export const loadUser = createAsyncThunk(
   "auth/loadUser",
   async (_, { rejectWithValue }) => {
@@ -89,45 +98,7 @@ export const loadUser = createAsyncThunk(
   }
 );
 
-export const updateUser = createAsyncThunk(
-  "auth/updateUser",
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      const res = await axios.put(`${API_BASE}/update-user/${id}`, data);
-      return {
-        user: res.data.user,
-        message: res.data.message,
-      };
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Update failed");
-    }
-  }
-);
-
-export const fetchUserById = createAsyncThunk(
-  "auth/fetchUserById",
-  async (id, { rejectWithValue }) => {
-    try {
-      const res = await axios.get(`${API_BASE}/get-user/${id}`);
-      return res.data.user;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch user");
-    }
-  }
-);
-
-export const getAllUsers = createAsyncThunk(
-  "auth/getAllUsers",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await axios.get(`${API_BASE}/all`);
-      return res.data.users;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch users");
-    }
-  }
-);
-
+// Forgot Password
 export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
   async (email, { rejectWithValue }) => {
@@ -140,6 +111,7 @@ export const forgotPassword = createAsyncThunk(
   }
 );
 
+// Reset Password (via token link)
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async ({ token, data }, { rejectWithValue }) => {
@@ -156,6 +128,7 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+// Update Password (while logged in)
 export const updatePassword = createAsyncThunk(
   "auth/updatePassword",
   async (data, { rejectWithValue }) => {
@@ -175,44 +148,42 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    resetAuthState: () => initialState,
+    resetAuthState: (state) => {
+      state.loading = false;
+      state.error = null;
+      state.message = null;
+      // keep user & pendingEmail intact unless explicitly cleared
+    },
+    clearPendingEmail: (state) => {
+      state.pendingEmail = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // ✅ Handle getAllUsers properly
-      .addCase(getAllUsers.fulfilled, (state, action) => {
-        state.loading = false;
-        state.users = action.payload;
-        state.error = null;
-      })
-      .addCase(getAllUsers.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // ✅ General loading state
+      // ✅ General loading
       .addMatcher(
         (action) => action.type.startsWith("auth/") && action.type.endsWith("/pending"),
         (state) => {
           state.loading = true;
           state.error = null;
+          state.message = null;
         }
       )
-
-      // ✅ General success handler (EXCEPT for getAllUsers)
+      // ✅ Success
       .addMatcher(
-        (action) =>
-          action.type.startsWith("auth/") &&
-          action.type.endsWith("/fulfilled") &&
-          action.type !== getAllUsers.fulfilled.type,
+        (action) => action.type.startsWith("auth/") && action.type.endsWith("/fulfilled"),
         (state, action) => {
           state.loading = false;
-          Object.assign(state, action.payload);
+          if (action.payload.user !== undefined) state.user = action.payload.user;
+          if (action.payload.isAuthenticated !== undefined)
+            state.isAuthenticated = action.payload.isAuthenticated;
+          if (action.payload.message) state.message = action.payload.message;
+          if (action.payload.pendingEmail !== undefined)
+            state.pendingEmail = action.payload.pendingEmail;
           state.error = null;
         }
       )
-
-      // ✅ General error handler
+      // ✅ Error
       .addMatcher(
         (action) => action.type.startsWith("auth/") && action.type.endsWith("/rejected"),
         (state, action) => {
@@ -226,5 +197,5 @@ const authSlice = createSlice({
 // ==========================
 // Exports
 // ==========================
-export const { resetAuthState } = authSlice.actions;
+export const { resetAuthState, clearPendingEmail } = authSlice.actions;
 export default authSlice.reducer;
