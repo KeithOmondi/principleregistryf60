@@ -1,3 +1,4 @@
+// src/pages/admin/RecordPage.jsx
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -25,57 +26,57 @@ const RecordPage = () => {
 
   const { list: courts } = useSelector((state) => state.courts);
 
+  // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [courtFilter, setCourtFilter] = useState("All");
 
+  // Modal state
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  /* ----------------- Fetch Data ----------------- */
+  /* ----------------- Fetch Courts ----------------- */
   useEffect(() => {
-    dispatch(fetchAllRecordsForAdmin({ page: 1, limit: 30 }));
     dispatch(fetchCourts());
   }, [dispatch]);
+
+  /* ----------------- Fetch Records (with filters) ----------------- */
+  const fetchRecords = (page = 1, limit = pageSize) => {
+    dispatch(
+      fetchAllRecordsForAdmin({
+        page,
+        limit,
+        search,
+        status: statusFilter,
+        court: courtFilter,
+      })
+    );
+  };
+
+  useEffect(() => {
+    fetchRecords(1, pageSize); // initial load
+  }, [search, statusFilter, courtFilter]); // refetch when filters change
 
   /* ----------------- Toast & Reset ----------------- */
   useEffect(() => {
     if (message) {
       toast.success(message);
       dispatch(resetRecordState());
-      dispatch(fetchAllRecordsForAdmin({ page: currentPage, limit: pageSize }));
+      fetchRecords(currentPage, pageSize);
     }
     if (error) {
       toast.error(error);
       dispatch(resetRecordState());
     }
-  }, [message, error, dispatch, currentPage, pageSize]);
-
-  /* ----------------- Filtering (client-side) ----------------- */
-  const filteredRecords = records.filter((r) => {
-    const searchLower = search.toLowerCase();
-
-    const matchesSearch =
-      r.nameOfDeceased?.toLowerCase().includes(searchLower) ||
-      r.causeNo?.toLowerCase().includes(searchLower) ||
-      r.courtStation?.name?.toLowerCase().includes(searchLower);
-
-    const matchesStatus =
-      statusFilter === "All" ? true : r.form60Compliance === statusFilter;
-
-    const matchesCourt =
-      courtFilter === "All" ? true : r.courtStation?._id === courtFilter;
-
-    return matchesSearch && matchesStatus && matchesCourt;
-  });
+  }, [message, error]);
 
   /* ----------------- Handlers ----------------- */
   const handlePageChange = (newPage) => {
-    dispatch(fetchAllRecordsForAdmin({ page: newPage, limit: pageSize }));
+    fetchRecords(newPage, pageSize);
   };
 
   const handlePageSizeChange = (newSize) => {
-    dispatch(fetchAllRecordsForAdmin({ page: 1, limit: newSize }));
+    fetchRecords(1, newSize);
   };
 
   const handleEditClick = (record) => {
@@ -135,14 +136,14 @@ const RecordPage = () => {
       </div>
 
       {/* Records Table */}
-      {filteredRecords.length === 0 ? (
-        <p className="text-gray-500 text-center">No matching records found.</p>
+      {records.length === 0 ? (
+        <p className="text-gray-500 text-center">No records found.</p>
       ) : (
         <div className="overflow-x-auto shadow-lg rounded-2xl border border-[#0a2342]/20">
           <table className="min-w-full border-collapse">
             <thead className="bg-[#0a3b1f] text-white">
               <tr>
-                <th className="border p-3 text-left">#</th>
+                <th className="border p-3 text-left"></th>
                 <th className="border p-3 text-left">Court Station</th>
                 <th className="border p-3 text-left">Cause No.</th>
                 <th className="border p-3 text-left">Name of Deceased</th>
@@ -156,7 +157,7 @@ const RecordPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredRecords.map((r, idx) => (
+              {records.map((r, idx) => (
                 <tr
                   key={r._id || idx}
                   className={`${

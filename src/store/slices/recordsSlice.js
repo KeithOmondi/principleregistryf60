@@ -3,6 +3,12 @@ import axios from "axios";
 
 const RECORD_API = "https://principle-registry.onrender.com/api/v1/records";
 
+// ✅ Helper to attach token
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token"); // or from Redux state if you prefer
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 /* ------------------------- ASYNC THUNKS ------------------------- */
 
 // Fetch records (user)
@@ -10,26 +16,29 @@ export const fetchRecords = createAsyncThunk(
   "records/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${RECORD_API}/user-records`);
-      return res.data; // { records, currentPage, totalPages, totalRecords, pageSize }
+      const res = await axios.get(`${RECORD_API}/user-records`, {
+        headers: getAuthHeaders(),
+      });
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch records");
     }
   }
 );
 
-// Fetch all records (admin, paginated)
+// Fetch all records (admin)
 export const fetchAllRecordsForAdmin = createAsyncThunk(
   "records/fetchAllAdmin",
-  async ({ page = 1, limit = 30 } = {}, { rejectWithValue }) => {
+  async ({ page = 1, limit = 30, search = "", court = "All", status = "All" }, { rejectWithValue }) => {
     try {
-      const res = await axios.get(
-        `${RECORD_API}/admin?page=${page}&limit=${limit}`,
-        { withCredentials: true }
-      );
-      return res.data; // { records, currentPage, totalPages, totalRecords, pageSize }
+      const res = await axios.get(`${RECORD_API}/admin`, {
+        params: { page, limit, search, court, status },
+        headers: getAuthHeaders(),
+        withCredentials: true,
+      });
+      return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch admin records");
+      return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch records");
     }
   }
 );
@@ -39,7 +48,9 @@ export const addRecord = createAsyncThunk(
   "records/add",
   async (data, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${RECORD_API}/create`, data);
+      const res = await axios.post(`${RECORD_API}/create`, data, {
+        headers: getAuthHeaders(),
+      });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "❌ Failed to add record");
@@ -53,10 +64,13 @@ export const bulkUploadRecords = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await axios.post(`${RECORD_API}/bulk-upload`, formData, {
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "multipart/form-data",
+        },
         withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
       });
-      return res.data; // { message, records }
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "❌ Failed to bulk upload records");
     }
@@ -69,9 +83,10 @@ export const updateRecord = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const res = await axios.put(`${RECORD_API}/update/${id}`, data, {
+        headers: getAuthHeaders(),
         withCredentials: true,
       });
-      return res.data; // updated record object
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "❌ Failed to update record");
     }
@@ -83,7 +98,9 @@ export const deleteRecord = createAsyncThunk(
   "records/delete",
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${RECORD_API}/delete/${id}`);
+      await axios.delete(`${RECORD_API}/delete/${id}`, {
+        headers: getAuthHeaders(),
+      });
       return id;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "❌ Failed to delete record");
@@ -102,6 +119,9 @@ const recordsSlice = createSlice({
     totalRecords: 0,
     pageSize: 30,
     selectedRecord: null,
+    search: "",
+    court: "All",
+    status: "All",
     loading: false,
     error: null,
     message: null,
@@ -114,6 +134,26 @@ const recordsSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.message = null;
+    },
+    setFilters: (state, action) => {
+      const { search, court, status } = action.payload;
+      if (search !== undefined) state.search = search;
+      if (court !== undefined) state.court = court;
+      if (status !== undefined) state.status = status;
+      state.currentPage = 1; // reset pagination when filters change
+    },
+    resetFilters: (state) => {
+      state.search = "";
+      state.court = "All";
+      state.status = "All";
+      state.currentPage = 1;
+    },
+    setPage: (state, action) => {
+      state.currentPage = action.payload;
+    },
+    setPageSize: (state, action) => {
+      state.pageSize = action.payload;
+      state.currentPage = 1;
     },
   },
   extraReducers: (builder) => {
@@ -228,5 +268,13 @@ const recordsSlice = createSlice({
 });
 
 /* ------------------------- EXPORTS ------------------------- */
-export const { clearSelectedRecord, resetRecordState } = recordsSlice.actions;
+export const {
+  clearSelectedRecord,
+  resetRecordState,
+  setFilters,
+  resetFilters,
+  setPage,
+  setPageSize,
+} = recordsSlice.actions;
+
 export default recordsSlice.reducer;

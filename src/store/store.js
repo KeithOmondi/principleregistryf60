@@ -15,4 +15,5 @@ export const store = configureStore({
     match: matchReducer,
     courts: courtSlice
   },
+  
 });
