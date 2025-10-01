@@ -40,7 +40,7 @@ const RecordPage = () => {
     dispatch(fetchCourts());
   }, [dispatch]);
 
-  /* ----------------- Fetch Records (with filters) ----------------- */
+  /* ----------------- Fetch Records ----------------- */
   const fetchRecords = (page = 1, limit = pageSize) => {
     dispatch(
       fetchAllRecordsForAdmin({
@@ -53,20 +53,19 @@ const RecordPage = () => {
     );
   };
 
-  // Debounce only search
-useEffect(() => {
-  const delayDebounce = setTimeout(() => {
+  // Debounce search (500ms)
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchRecords(1, pageSize);
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search]);
+
+  // Fetch instantly when filters change
+  useEffect(() => {
     fetchRecords(1, pageSize);
-  }, 500);
-
-  return () => clearTimeout(delayDebounce);
-}, [search]);
-
-// Instant fetch for filters
-useEffect(() => {
-  fetchRecords(1, pageSize);
-}, [statusFilter, courtFilter]);
-
+  }, [statusFilter, courtFilter]);
 
   /* ----------------- Toast & Reset ----------------- */
   useEffect(() => {
@@ -102,10 +101,8 @@ useEffect(() => {
   };
 
   /* ----------------- UI ----------------- */
-  if (loading) return <p className="p-4">Loading records...</p>;
-
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen relative">
       <ToastContainer position="top-right" autoClose={3000} />
 
       <h2 className="text-3xl font-bold mb-6 text-center text-[#0a2342]">
@@ -146,11 +143,17 @@ useEffect(() => {
         </select>
       </div>
 
-      {/* Records Table */}
-      {records.length === 0 ? (
-        <p className="text-gray-500 text-center">No records found.</p>
-      ) : (
-        <div className="overflow-x-auto shadow-lg rounded-2xl border border-[#0a2342]/20">
+      {/* Records Table with inline loading */}
+      <div className="relative overflow-x-auto shadow-lg rounded-2xl border border-[#0a2342]/20">
+        {loading && (
+          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+            <p className="text-gray-600">Fetching records...</p>
+          </div>
+        )}
+
+        {records.length === 0 ? (
+          <p className="text-gray-500 text-center p-6">No records found.</p>
+        ) : (
           <table className="min-w-full border-collapse">
             <thead className="bg-[#0a3b1f] text-white">
               <tr>
@@ -229,8 +232,8 @@ useEffect(() => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Pagination Controls */}
       <div className="flex justify-between items-center mt-6">
