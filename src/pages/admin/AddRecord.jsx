@@ -322,40 +322,50 @@ const AddRecord = () => {
           </div>
 
           {/* Rejection Reason */}
-          {formData.form60Compliance === "Rejected" && (
-            <div className="md:col-span-2">
-              <label className="block mb-1 font-medium text-red-600">
-                Reason for Rejection
-              </label>
-              <select
-                name="rejectionReason"
-                value={formData.rejectionReason}
-                onChange={handleChange}
-                className="w-full border px-3 py-2 rounded"
-                required
-              >
-                <option value="">-- Select Reason --</option>
-                {rejectionReasons.map((reason, idx) => (
-                  <option key={idx} value={reason}>
-                    {reason}
-                  </option>
-                ))}
-                <option value="Other">Other</option>
-              </select>
+{formData.form60Compliance === "Rejected" && (
+  <div className="md:col-span-2">
+    <label className="block mb-1 font-medium text-red-600">
+      Reason for Rejection
+    </label>
 
-              {formData.rejectionReason === "Other" && (
-                <input
-                  type="text"
-                  name="customRejection"
-                  value={formData.customRejection}
-                  onChange={handleChange}
-                  placeholder="Please specify..."
-                  className="w-full border mt-3 px-3 py-2 rounded"
-                  required
-                />
-              )}
-            </div>
-          )}
+    <Select
+      options={[
+        ...rejectionReasons.map((reason) => ({ value: reason, label: reason })),
+        { value: "Other", label: "Other" },
+      ]}
+      isClearable
+      isSearchable
+      placeholder="Search or select a reason..."
+      value={
+        formData.rejectionReason
+          ? { value: formData.rejectionReason, label: formData.rejectionReason }
+          : null
+      }
+      onChange={(selected) =>
+        setFormData((prev) => ({
+          ...prev,
+          rejectionReason: selected ? selected.value : "",
+          customRejection: "", // reset custom field when changing reason
+        }))
+      }
+      className="react-select-container"
+      classNamePrefix="react-select"
+    />
+
+    {formData.rejectionReason === "Other" && (
+      <input
+        type="text"
+        name="customRejection"
+        value={formData.customRejection}
+        onChange={handleChange}
+        placeholder="Please specify..."
+        className="w-full border mt-3 px-3 py-2 rounded"
+        required
+      />
+    )}
+  </div>
+)}
+
 
           {/* Submit */}
           <button

@@ -53,9 +53,20 @@ const RecordPage = () => {
     );
   };
 
-  useEffect(() => {
-    fetchRecords(1, pageSize); // initial load
-  }, [search, statusFilter, courtFilter]); // refetch when filters change
+  // Debounce only search
+useEffect(() => {
+  const delayDebounce = setTimeout(() => {
+    fetchRecords(1, pageSize);
+  }, 500);
+
+  return () => clearTimeout(delayDebounce);
+}, [search]);
+
+// Instant fetch for filters
+useEffect(() => {
+  fetchRecords(1, pageSize);
+}, [statusFilter, courtFilter]);
+
 
   /* ----------------- Toast & Reset ----------------- */
   useEffect(() => {
