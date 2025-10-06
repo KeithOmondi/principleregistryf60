@@ -1,19 +1,24 @@
+// src/redux/slices/recordsSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const RECORD_API = "https://principle-registry.onrender.com/api/v1/records";
 
-// ✅ Helper to attach token
+/* ============================================================
+   🔹 Helper: Attach Token to Requests
+============================================================ */
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("token"); // or from Redux state if you prefer
+  const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-/* ------------------------- ASYNC THUNKS ------------------------- */
+/* ============================================================
+   🔹 ASYNC THUNKS
+============================================================ */
 
-// Fetch records (user)
+// 🟩 Fetch user-specific records
 export const fetchRecords = createAsyncThunk(
-  "records/fetchAll",
+  "records/fetchUserRecords",
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.get(`${RECORD_API}/user-records`, {
@@ -21,15 +26,20 @@ export const fetchRecords = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch records");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to fetch user records"
+      );
     }
   }
 );
 
-// Fetch all records (admin)
+// 🟨 Fetch all records (Admin only)
 export const fetchAllRecordsForAdmin = createAsyncThunk(
   "records/fetchAllAdmin",
-  async ({ page = 1, limit = 30, search = "", court = "All", status = "All" }, { rejectWithValue }) => {
+  async (
+    { page = 1, limit = 30, search = "", court = "All", status = "All" },
+    { rejectWithValue }
+  ) => {
     try {
       const res = await axios.get(`${RECORD_API}/admin`, {
         params: { page, limit, search, court, status },
@@ -38,27 +48,31 @@ export const fetchAllRecordsForAdmin = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch records");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to fetch records"
+      );
     }
   }
 );
 
-// Add record
+// 🟩 Add a single record
 export const addRecord = createAsyncThunk(
   "records/add",
-  async (data, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${RECORD_API}/create`, data, {
+      const res = await axios.post(`${RECORD_API}/create`, payload, {
         headers: getAuthHeaders(),
       });
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to add record");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to add record"
+      );
     }
   }
 );
 
-// Bulk upload
+// 🟦 Bulk upload records via CSV/Excel
 export const bulkUploadRecords = createAsyncThunk(
   "records/bulkUpload",
   async (formData, { rejectWithValue }) => {
@@ -72,12 +86,14 @@ export const bulkUploadRecords = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to bulk upload records");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to bulk upload records"
+      );
     }
   }
 );
 
-// Update record
+// 🟨 Update a single record
 export const updateRecord = createAsyncThunk(
   "records/update",
   async ({ id, data }, { rejectWithValue }) => {
@@ -88,12 +104,14 @@ export const updateRecord = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to update record");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to update record"
+      );
     }
   }
 );
 
-// Delete record
+// 🟥 Delete a record
 export const deleteRecord = createAsyncThunk(
   "records/delete",
   async (id, { rejectWithValue }) => {
@@ -103,69 +121,157 @@ export const deleteRecord = createAsyncThunk(
       });
       return id;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to delete record");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to delete record"
+      );
     }
   }
 );
 
-/* ------------------------- SLICE ------------------------- */
+// 🟧 Bulk update “Date Forwarded to G.P.”
+export const updateMultipleRecordsDateForwarded = createAsyncThunk(
+  "records/updateMultipleRecordsDateForwarded",
+  async ({ ids, date }, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${RECORD_API}/bulk-update-forwarded`,
+        { ids, date },
+        {
+          headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        }
+      );
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to update records"
+      );
+    }
+  }
+);
 
+// 🟪 Admin: Get dashboard stats
+export const fetchAdminDashboardStats = createAsyncThunk(
+  "records/fetchDashboardStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${RECORD_API}/dashboard-stats`, {
+        headers: getAuthHeaders(),
+      });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to fetch dashboard stats"
+      );
+    }
+  }
+);
+
+// 🟪 Admin: Get recent records
+export const fetchRecentRecords = createAsyncThunk(
+  "records/fetchRecentRecords",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${RECORD_API}/recent`, {
+        headers: getAuthHeaders(),
+      });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to fetch recent records"
+      );
+    }
+  }
+);
+
+// 🟪 Admin: Verify / Publish records
+export const verifyRecords = createAsyncThunk(
+  "records/verifyRecords",
+  async (ids, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(
+        `${RECORD_API}/verify`,
+        { ids },
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to verify records"
+      );
+    }
+  }
+);
+
+/* ============================================================
+   🔹 INITIAL STATE
+============================================================ */
+const initialState = {
+  records: [],
+  selectedRecord: null,
+  currentPage: 1,
+  totalPages: 1,
+  totalRecords: 0,
+  pageSize: 30,
+  search: "",
+  court: "All",
+  status: "All",
+  dashboardStats: null,
+  recentRecords: [],
+  loading: false,
+  error: null,
+  message: null,
+};
+
+/* ============================================================
+   🔹 SLICE DEFINITION
+============================================================ */
 const recordsSlice = createSlice({
   name: "records",
-  initialState: {
-    records: [],
-    currentPage: 1,
-    totalPages: 1,
-    totalRecords: 0,
-    pageSize: 30,
-    selectedRecord: null,
-    search: "",
-    court: "All",
-    status: "All",
-    loading: false,
-    error: null,
-    message: null,
-  },
+  initialState,
   reducers: {
-    clearSelectedRecord: (state) => {
+    clearSelectedRecord(state) {
       state.selectedRecord = null;
     },
-    resetRecordState: (state) => {
+    resetRecordState(state) {
       state.loading = false;
       state.error = null;
       state.message = null;
     },
-    setFilters: (state, action) => {
+    setFilters(state, action) {
       const { search, court, status } = action.payload;
       if (search !== undefined) state.search = search;
       if (court !== undefined) state.court = court;
       if (status !== undefined) state.status = status;
-      state.currentPage = 1; // reset pagination when filters change
+      state.currentPage = 1;
     },
-    resetFilters: (state) => {
+    resetFilters(state) {
       state.search = "";
       state.court = "All";
       state.status = "All";
       state.currentPage = 1;
     },
-    setPage: (state, action) => {
+    setPage(state, action) {
       state.currentPage = action.payload;
     },
-    setPageSize: (state, action) => {
+    setPageSize(state, action) {
       state.pageSize = action.payload;
       state.currentPage = 1;
     },
   },
   extraReducers: (builder) => {
     builder
-      /* ----------------- Fetch records (user) ----------------- */
+      // 🔹 User records
       .addCase(fetchRecords.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchRecords.fulfilled, (state, action) => {
         state.loading = false;
-        state.records = Array.isArray(action.payload.records) ? action.payload.records : [];
+        state.records = Array.isArray(action.payload.records)
+          ? action.payload.records
+          : [];
         state.currentPage = Number(action.payload.currentPage) || 1;
         state.totalPages = Number(action.payload.totalPages) || 1;
         state.totalRecords = Number(action.payload.totalRecords) || 0;
@@ -176,14 +282,16 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ----------------- Fetch all records (admin) ----------------- */
+      // 🔹 Admin: fetch all records
       .addCase(fetchAllRecordsForAdmin.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchAllRecordsForAdmin.fulfilled, (state, action) => {
         state.loading = false;
-        state.records = Array.isArray(action.payload.records) ? action.payload.records : [];
+        state.records = Array.isArray(action.payload.records)
+          ? action.payload.records
+          : [];
         state.currentPage = Number(action.payload.currentPage) || 1;
         state.totalPages = Number(action.payload.totalPages) || 1;
         state.totalRecords = Number(action.payload.totalRecords) || 0;
@@ -197,7 +305,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ----------------- Add record ----------------- */
+      // 🔹 Add record
       .addCase(addRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -213,7 +321,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ----------------- Bulk upload ----------------- */
+      // 🔹 Bulk upload
       .addCase(bulkUploadRecords.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -231,25 +339,25 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ----------------- Update record ----------------- */
+      // 🔹 Update record
       .addCase(updateRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateRecord.fulfilled, (state, action) => {
         state.loading = false;
+        const index = state.records.findIndex(
+          (r) => r._id === action.payload._id
+        );
+        if (index !== -1) state.records[index] = action.payload;
         state.message = "✅ Record updated successfully";
-        const index = state.records.findIndex((r) => r._id === action.payload._id);
-        if (index !== -1) {
-          state.records[index] = action.payload;
-        }
       })
       .addCase(updateRecord.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "❌ Failed to update record";
+        state.error = action.payload;
       })
 
-      /* ----------------- Delete record ----------------- */
+      // 🔹 Delete record
       .addCase(deleteRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -263,11 +371,76 @@ const recordsSlice = createSlice({
       .addCase(deleteRecord.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // 🔹 Bulk update Date Forwarded
+      .addCase(updateMultipleRecordsDateForwarded.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        updateMultipleRecordsDateForwarded.fulfilled,
+        (state, action) => {
+          state.loading = false;
+          state.message =
+            action.payload.message || "✅ Records updated successfully";
+        }
+      )
+      .addCase(updateMultipleRecordsDateForwarded.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Admin: Dashboard stats
+      .addCase(fetchAdminDashboardStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminDashboardStats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.dashboardStats = action.payload;
+      })
+      .addCase(fetchAdminDashboardStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Admin: Recent records
+      .addCase(fetchRecentRecords.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchRecentRecords.fulfilled, (state, action) => {
+        state.loading = false;
+        state.recentRecords = Array.isArray(action.payload.records)
+          ? action.payload.records
+          : [];
+      })
+      .addCase(fetchRecentRecords.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Admin: Verify records
+      .addCase(verifyRecords.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyRecords.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message =
+          action.payload.message || "✅ Records verified successfully";
+      })
+      .addCase(verifyRecords.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-/* ------------------------- EXPORTS ------------------------- */
+/* ============================================================
+   🔹 EXPORTS
+============================================================ */
 export const {
   clearSelectedRecord,
   resetRecordState,
