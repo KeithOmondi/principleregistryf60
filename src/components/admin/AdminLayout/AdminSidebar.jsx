@@ -25,11 +25,7 @@ const AdminSidebar = () => {
     { to: "/admin/dashboard", label: "Dashboard", icon: <MdDashboard size={20} /> },
     { to: "/admin/records", label: "Manage Records", icon: <MdLibraryBooks size={20} /> },
     { to: "/admin/records/add", label: "Add Record", icon: <MdAddBox size={20} /> },
-    { to: "/admin/records/bulk-upload", label: "Bulk Upload", icon: <MdUploadFile size={20} /> },
-    { to: "/admin/bulk-report", label: "Bulk Report", icon: <MdAssessment size={20} /> },
     { to: "/admin/users", label: "Manage Users", icon: <MdPeople size={20} /> },
-    { to: "/admin/verify", label: "Verify Records", icon: <MdPeople size={20} /> },
-    { to: "/change-password", label: "Change Password", icon: <MdLock size={20} /> },
   ];
 
   const handleLogout = async () => {
