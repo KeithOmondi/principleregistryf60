@@ -18,9 +18,7 @@ import RecordsPage from "./pages/user/RecordsPage";
 // ✅ Layouts
 import AdminLayout from "./components/admin/AdminLayout/AdminLayout";
 import ManageRecordsPage from "./pages/admin/ManageRecordsPage";
-import BulkUpload from "./components/admin/BulkUpload";
-import BulkReport from "./pages/admin/BulkReport";
-import VerifyRecords from "./components/admin/VerifyRecords";
+import UsersPage from "./pages/admin/UsersPage";
 
 // =================== USER (PUBLIC) ROUTES ===================
 export const userRoutes = [
@@ -57,14 +55,6 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/records/bulk-upload",
-    element: (
-      <AdminLayout>
-        <BulkUpload />
-      </AdminLayout>
-    ),
-  },
-  {
     path: "/admin/records/edit/:id",
     element: (
       <AdminLayout>
@@ -73,21 +63,15 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/bulk-report",
+    path: "/admin/users",
     element: (
       <AdminLayout>
-        <BulkReport />
+        <UsersPage />
       </AdminLayout>
     ),
   },
-  {
-    path: "/admin/verify",
-    element: (
-      <AdminLayout>
-        <VerifyRecords />
-      </AdminLayout>
-    ),
-  },
+  
+
 ];
 
 // =================== AUTH ROUTES ===================

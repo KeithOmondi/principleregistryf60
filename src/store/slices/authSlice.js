@@ -1,15 +1,14 @@
-// store/slices/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 axios.defaults.withCredentials = true;
 
-const API_BASE = "https://principle-registry.onrender.com/api/v1/user";
 const AUTH_API = "https://principle-registry.onrender.com/api/v1/auth";
+const USER_API = "https://principle-registry.onrender.com/api/v1/user";
 
-// ==========================
-// Initial State
-// ==========================
+/* ==========================
+   INITIAL STATE
+========================== */
 const initialState = {
   user: null,
   users: [],
@@ -17,29 +16,37 @@ const initialState = {
   loading: false,
   error: null,
   message: null,
-  pendingEmail: null, // <-- used for OTP verification step
+  pendingEmail: null, // used during OTP verification
 };
 
-// ==========================
-// Async Thunks
-// ==========================
+/* ==========================
+   HELPER: AUTH HEADERS
+========================== */
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
-// Register
+/* ==========================
+   ASYNC THUNKS
+========================== */
+
+// ✅ Register user
 export const register = createAsyncThunk(
   "auth/register",
-  async (data, { rejectWithValue }) => {
+  async (formData, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${AUTH_API}/register`, data);
-      return { message: res.data.message, pendingEmail: data.email };
+      const res = await axios.post(`${AUTH_API}/register`, formData);
+      return { message: res.data.message, pendingEmail: formData.email };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Registration failed");
     }
   }
 );
 
-// Verify OTP
+// ✅ Verify OTP
 export const otpVerification = createAsyncThunk(
-  "auth/verifyOtp",
+  "auth/verifyOTP",
   async ({ email, otp }, { rejectWithValue }) => {
     try {
       const res = await axios.post(`${AUTH_API}/verify-otp`, { email, otp });
@@ -47,7 +54,7 @@ export const otpVerification = createAsyncThunk(
         user: res.data.user,
         isAuthenticated: true,
         message: res.data.message,
-        pendingEmail: null, // clear pendingEmail once verified
+        pendingEmail: null,
       };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "OTP verification failed");
@@ -55,12 +62,14 @@ export const otpVerification = createAsyncThunk(
   }
 );
 
-// Login
+// ✅ Login
 export const login = createAsyncThunk(
   "auth/login",
-  async (data, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${AUTH_API}/login`, data);
+      const res = await axios.post(`${AUTH_API}/login`, credentials);
+      const token = res.data?.token;
+      if (token) localStorage.setItem("token", token);
       return {
         user: res.data.user,
         isAuthenticated: true,
@@ -72,25 +81,26 @@ export const login = createAsyncThunk(
   }
 );
 
-// Logout
+// ✅ Logout
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${AUTH_API}/logout`);
-      return { message: res.data.message, user: null, isAuthenticated: false };
+      await axios.get(`${AUTH_API}/logout`);
+      localStorage.removeItem("token");
+      return { message: "Logged out successfully", user: null, isAuthenticated: false };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Logout failed");
     }
   }
 );
 
-// Load User (session restore)
+// ✅ Load logged-in user (session restore)
 export const loadUser = createAsyncThunk(
   "auth/loadUser",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${AUTH_API}/me`);
+      const res = await axios.get(`${AUTH_API}/me`, { headers: getAuthHeaders() });
       return { user: res.data.user, isAuthenticated: true };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to load user");
@@ -98,7 +108,7 @@ export const loadUser = createAsyncThunk(
   }
 );
 
-// Forgot Password
+// ✅ Forgot password
 export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
   async (email, { rejectWithValue }) => {
@@ -106,12 +116,12 @@ export const forgotPassword = createAsyncThunk(
       const res = await axios.post(`${AUTH_API}/password/forgot`, { email });
       return { message: res.data.message };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Forgot password failed");
+      return rejectWithValue(err.response?.data?.message || "Failed to send reset email");
     }
   }
 );
 
-// Reset Password (via token link)
+// ✅ Reset password via token
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async ({ token, data }, { rejectWithValue }) => {
@@ -123,27 +133,59 @@ export const resetPassword = createAsyncThunk(
         message: res.data.message,
       };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Reset password failed");
+      return rejectWithValue(err.response?.data?.message || "Password reset failed");
     }
   }
 );
 
-// Update Password (while logged in)
+// ✅ Update password (while logged in)
 export const updatePassword = createAsyncThunk(
   "auth/updatePassword",
   async (data, { rejectWithValue }) => {
     try {
-      const res = await axios.put(`${AUTH_API}/password/update`, data);
+      const res = await axios.put(`${AUTH_API}/password/update`, data, {
+        headers: getAuthHeaders(),
+      });
       return { message: res.data.message };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Update password failed");
+      return rejectWithValue(err.response?.data?.message || "Failed to update password");
     }
   }
 );
 
-// ==========================
-// Slice
-// ==========================
+// ✅ Fetch all users (Admin)
+export const fetchAllUsers = createAsyncThunk(
+  "auth/fetchAllUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${USER_API}/all`, {
+        headers: getAuthHeaders(),
+      });
+      return res.data.users;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch users");
+    }
+  }
+);
+
+// ✅ Delete user (Admin)
+export const deleteUser = createAsyncThunk(
+  "auth/deleteUser",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axios.delete(`${USER_API}/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      return { id, message: res.data.message };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to delete user");
+    }
+  }
+);
+
+/* ==========================
+   SLICE
+========================== */
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -152,7 +194,6 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.message = null;
-      // keep user & pendingEmail intact unless explicitly cleared
     },
     clearPendingEmail: (state) => {
       state.pendingEmail = null;
@@ -160,42 +201,149 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ✅ General loading
-      .addMatcher(
-        (action) => action.type.startsWith("auth/") && action.type.endsWith("/pending"),
-        (state) => {
-          state.loading = true;
-          state.error = null;
-          state.message = null;
-        }
-      )
-      // ✅ Success
-      .addMatcher(
-        (action) => action.type.startsWith("auth/") && action.type.endsWith("/fulfilled"),
-        (state, action) => {
-          state.loading = false;
-          if (action.payload.user !== undefined) state.user = action.payload.user;
-          if (action.payload.isAuthenticated !== undefined)
-            state.isAuthenticated = action.payload.isAuthenticated;
-          if (action.payload.message) state.message = action.payload.message;
-          if (action.payload.pendingEmail !== undefined)
-            state.pendingEmail = action.payload.pendingEmail;
-          state.error = null;
-        }
-      )
-      // ✅ Error
-      .addMatcher(
-        (action) => action.type.startsWith("auth/") && action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.loading = false;
-          state.error = action.payload;
-        }
-      );
+      // 🟢 Register
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message;
+        state.pendingEmail = action.payload.pendingEmail;
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🟢 OTP Verification
+      .addCase(otpVerification.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(otpVerification.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.pendingEmail = null;
+        state.message = action.payload.message;
+      })
+      .addCase(otpVerification.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🟢 Login
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.message = action.payload.message;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🟢 Logout
+      .addCase(logout.fulfilled, (state, action) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.message = action.payload.message;
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // 🟢 Load user
+      .addCase(loadUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(loadUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+      })
+      .addCase(loadUser.rejected, (state, action) => {
+        state.loading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload;
+      })
+
+      // 🟢 Forgot password
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.message = action.payload.message;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // 🟢 Reset password
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.message = action.payload.message;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // 🟢 Update password
+      .addCase(updatePassword.fulfilled, (state, action) => {
+        state.message = action.payload.message;
+      })
+      .addCase(updatePassword.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // 🟢 Fetch users
+      .addCase(fetchAllUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = action.payload || [];
+      })
+      .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🟢 Delete user
+      .addCase(deleteUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = state.users.filter((u) => u._id !== action.payload.id);
+        state.message = action.payload.message;
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
-// ==========================
-// Exports
-// ==========================
+/* ==========================
+   EXPORTS
+========================== */
 export const { resetAuthState, clearPendingEmail } = authSlice.actions;
 export default authSlice.reducer;
+
+/* ==========================
+   SELECTORS
+========================== */
+export const selectAuthUser = (state) => state.auth.user;
+export const selectAuthLoading = (state) => state.auth.loading;
+export const selectAuthError = (state) => state.auth.error;
+export const selectAuthMessage = (state) => state.auth.message;
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
+export const selectAllUsers = (state) => state.auth.users;
+export const selectPendingEmail = (state) => state.auth.pendingEmail;

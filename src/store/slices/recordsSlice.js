@@ -72,26 +72,7 @@ export const addRecord = createAsyncThunk(
   }
 );
 
-// 🟦 Bulk upload records via CSV/Excel
-export const bulkUploadRecords = createAsyncThunk(
-  "records/bulkUpload",
-  async (formData, { rejectWithValue }) => {
-    try {
-      const res = await axios.post(`${RECORD_API}/bulk-upload`, formData, {
-        headers: {
-          ...getAuthHeaders(),
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
-      });
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || "❌ Failed to bulk upload records"
-      );
-    }
-  }
-);
+
 
 // 🟨 Update a single record
 export const updateRecord = createAsyncThunk(
@@ -183,26 +164,7 @@ export const fetchRecentRecords = createAsyncThunk(
   }
 );
 
-// 🟪 Admin: Verify / Publish records
-export const verifyRecords = createAsyncThunk(
-  "records/verifyRecords",
-  async (ids, { rejectWithValue }) => {
-    try {
-      const res = await axios.post(
-        `${RECORD_API}/verify`,
-        { ids },
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || "❌ Failed to verify records"
-      );
-    }
-  }
-);
+
 
 /* ============================================================
    🔹 INITIAL STATE
@@ -321,23 +283,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Bulk upload
-      .addCase(bulkUploadRecords.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(bulkUploadRecords.fulfilled, (state, action) => {
-        state.loading = false;
-        state.message = action.payload.message || "✅ Bulk upload successful";
-        if (Array.isArray(action.payload.records)) {
-          state.records = [...action.payload.records, ...state.records];
-          state.totalRecords += action.payload.records.length;
-        }
-      })
-      .addCase(bulkUploadRecords.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
+      
 
       // 🔹 Update record
       .addCase(updateRecord.pending, (state) => {
@@ -421,20 +367,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Admin: Verify records
-      .addCase(verifyRecords.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(verifyRecords.fulfilled, (state, action) => {
-        state.loading = false;
-        state.message =
-          action.payload.message || "✅ Records verified successfully";
-      })
-      .addCase(verifyRecords.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+    
   },
 });
 
