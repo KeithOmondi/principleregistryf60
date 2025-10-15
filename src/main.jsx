@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { store } from "./store/store.js";
 import "./index.css"; // Your global styles
 
+
 createRoot(document.getElementById("root")).render(
   <Provider store={store}>
     <App />
