@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAdminStats,
   fetchRecentRecords,
+  downloadMonthlyReport,
 } from "../../store/slices/adminSlice";
 import {
   LineChart,
@@ -26,14 +27,22 @@ const AdminDashboard = () => {
     recentRecords,
     loading,
     error,
+    reportDownloading,
+    reportError,
   } = useSelector((state) => state.admin);
+
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     dispatch(fetchAdminStats());
     dispatch(fetchRecentRecords());
   }, [dispatch]);
 
-  // Summary cards
+  const handleDownloadReport = () => {
+    dispatch(downloadMonthlyReport({ month: selectedMonth, year: selectedYear }));
+  };
+
   const recordCards = [
     { title: "Total Records", value: totalRecords, color: "bg-[#0a3b1f]" },
     { title: "Approved Records", value: approved, color: "bg-[#b48222]" },
@@ -55,24 +64,17 @@ const AdminDashboard = () => {
           alt="Judiciary Logo"
           className="h-16 w-auto"
         />
-        <h1 className="text-3xl font-bold text-[#0a3b1f]">
-          PR Admin Dashboard
-        </h1>
+        <h1 className="text-3xl font-bold text-[#0a3b1f]">PR Admin Dashboard</h1>
       </div>
 
       {/* Summary Cards */}
-      <h2 className="text-xl font-semibold mb-4 text-[#b48222]">
-        📊 Records Overview
-      </h2>
+      <h2 className="text-xl font-semibold mb-4 text-[#b48222]">📊 Records Overview</h2>
       {loading ? (
         <p className="text-gray-500">Loading stats...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {recordCards.map((c, idx) => (
-            <div
-              key={idx}
-              className={`${c.color} text-white rounded-lg p-6 shadow-lg`}
-            >
+            <div key={idx} className={`${c.color} text-white rounded-lg p-6 shadow-lg`}>
               <h2 className="text-lg font-semibold">{c.title}</h2>
               <p className="text-3xl font-bold">{c.value}</p>
             </div>
@@ -82,9 +84,7 @@ const AdminDashboard = () => {
 
       {/* Weekly Chart */}
       <div className="bg-white p-6 rounded-lg shadow mb-10">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">
-          📅 Weekly Statistics
-        </h3>
+        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📅 Weekly Statistics</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={weekly}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -101,9 +101,7 @@ const AdminDashboard = () => {
 
       {/* Monthly Chart */}
       <div className="bg-white p-6 rounded-lg shadow mb-10">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">
-          📆 Monthly Statistics
-        </h3>
+        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📆 Monthly Statistics</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={monthly}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -118,11 +116,41 @@ const AdminDashboard = () => {
         </ResponsiveContainer>
       </div>
 
+      {/* Monthly Report Download */}
+      <div className="bg-white p-6 rounded-lg shadow mb-10">
+        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📄 Download Monthly Report</h3>
+        <div className="flex items-center gap-4">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="border rounded px-3 py-2"
+          >
+            {[...Array(12).keys()].map((m) => (
+              <option key={m + 1} value={m + 1}>
+                {new Date(0, m).toLocaleString("default", { month: "long" })}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="border rounded px-3 py-2 w-24"
+          />
+          <button
+            onClick={handleDownloadReport}
+            className="bg-[#0a3b1f] text-white px-4 py-2 rounded hover:bg-[#083018]"
+            disabled={reportDownloading}
+          >
+            {reportDownloading ? "Downloading..." : "Download Report"}
+          </button>
+        </div>
+        {reportError && <p className="text-red-600 mt-2">{reportError}</p>}
+      </div>
+
       {/* Recent Records Table */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">
-          📝 Recently Added Records
-        </h3>
+      <div className="bg-white p-6 rounded-lg shadow mb-10">
+        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📝 Recently Added Records</h3>
         <div className="overflow-x-auto">
           <table className="w-full border border-gray-200 rounded-lg">
             <thead className="bg-[#0a3b1f] text-white">
