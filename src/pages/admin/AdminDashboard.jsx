@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAdminStats,
@@ -15,7 +15,137 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+import {
+  List,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  FileDown,
+  TrendingUp,
+  BarChart,
+  Loader2,
+} from "lucide-react";
 
+// --- Judiciary Kenya Brand Colors ---
+const COLORS = {
+  PRIMARY_GREEN: "#004832", // Deep Judiciary Green
+  ACCENT_GOLD: "#C8A239", // Judiciary Gold
+  DARK_GOLD: "#A57C1B", // Slightly darker gold for accents
+  ALERT_RED: "#7A1C1C", // Muted Maroon/Red for alerts
+  LIGHT_BG: "bg-[#F9F9F7]", // Light background close to parchment white
+};
+
+// --- Sub-Component: Recently Added Records Table ---
+const RecentRecordsTable = ({ recentRecords = [] }) => {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-2xl border border-gray-200 mb-10">
+      <h3
+        className="text-xl font-bold mb-5 flex items-center border-b pb-3"
+        style={{ color: COLORS.PRIMARY_GREEN }}
+      >
+        <List size={24} className="mr-3" style={{ color: COLORS.ACCENT_GOLD }} />
+        Recently Added Probate Records
+      </h3>
+
+      <div className="overflow-x-auto rounded-lg border border-gray-300">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead
+            style={{
+              backgroundColor: COLORS.PRIMARY_GREEN,
+              color: "#fff",
+            }}
+          >
+            <tr>
+              <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">
+                Cause No.
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">
+                Deceased
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">
+                Court Station
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">
+                Compliance Status
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">
+                Date Received
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-gray-100 bg-white">
+            {recentRecords.slice(0, 10).map((r, idx) => (
+              <tr
+                key={r._id || idx}
+                className="hover:bg-green-50 transition duration-150"
+              >
+                <td className="px-4 py-3 text-center text-sm text-gray-500">
+                  {idx + 1}
+                </td>
+                <td className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  {r.causeNo}
+                </td>
+                <td className="px-4 py-3 text-left text-sm font-medium text-gray-800">
+                  {r.nameOfDeceased}
+                </td>
+                <td className="px-4 py-3 text-left text-sm text-gray-700">
+                  {r.courtStation?.name || "N/A"}
+                </td>
+
+                <td className="px-4 py-3 text-center text-sm">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full`}
+                    style={{
+                      backgroundColor:
+                        r.form60Compliance === "Approved"
+                          ? "#FFF6D1"
+                          : "#FDECEC",
+                      color:
+                        r.form60Compliance === "Approved"
+                          ? COLORS.DARK_GOLD
+                          : COLORS.ALERT_RED,
+                    }}
+                  >
+                    {r.form60Compliance === "Approved" ? (
+                      <CheckCircle size={14} className="mr-1" />
+                    ) : (
+                      <AlertTriangle size={14} className="mr-1" />
+                    )}
+                    {r.form60Compliance || "Pending"}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 text-center text-sm text-gray-600">
+                  <div className="flex items-center justify-center">
+                    <Clock size={14} className="mr-1 text-gray-400" />
+                    {new Date(r.dateReceived).toLocaleDateString("en-KE")}
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {recentRecords.length === 0 && (
+              <tr>
+                <td
+                  colSpan="6"
+                  className="text-gray-500 py-6 text-center italic bg-gray-50"
+                >
+                  No recent records found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Admin Dashboard Component ---
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const {
@@ -44,86 +174,180 @@ const AdminDashboard = () => {
   };
 
   const recordCards = [
-    { title: "Total Records", value: totalRecords, color: "bg-[#0a3b1f]" },
-    { title: "Approved Records", value: approved, color: "bg-[#b48222]" },
-    { title: "Rejected Records", value: pending, color: "bg-[#6b1a1a]" },
+    {
+      title: "Total Records",
+      value: totalRecords,
+      bg: COLORS.PRIMARY_GREEN,
+      icon: <List />,
+    },
+    {
+      title: "Approved Records",
+      value: approved,
+      bg: COLORS.ACCENT_GOLD,
+      icon: <CheckCircle />,
+    },
+    {
+      title: "Pending Records",
+      value: pending,
+      bg: COLORS.ALERT_RED,
+      icon: <AlertTriangle />,
+    },
   ];
 
   return (
-    <div
-      className="p-6 min-h-screen bg-cover bg-fixed bg-center"
-      style={{
-        backgroundImage: "url('/assets/judicial-bg.png')",
-        backgroundColor: "#f9f9f9",
-      }}
-    >
+    <div className={`p-6 min-h-screen ${COLORS.LIGHT_BG}`}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-8 pb-4 border-b border-gray-200">
         <img
           src="https://judiciary.go.ke/wp-content/uploads/2023/05/logo1-Copy-2.png"
           alt="Judiciary Logo"
           className="h-16 w-auto"
         />
-        <h1 className="text-3xl font-bold text-[#0a3b1f]">PR Admin Dashboard</h1>
+        <h1
+          className="text-3xl font-bold"
+          style={{ color: COLORS.PRIMARY_GREEN }}
+        >
+          Probate Records Admin Dashboard
+        </h1>
       </div>
 
       {/* Summary Cards */}
-      <h2 className="text-xl font-semibold mb-4 text-[#b48222]">📊 Records Overview</h2>
+      <h2
+        className="text-xl font-semibold mb-5 flex items-center"
+        style={{ color: COLORS.PRIMARY_GREEN }}
+      >
+        <BarChart size={24} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
+        Records Overview
+      </h2>
+
       {loading ? (
-        <p className="text-gray-500">Loading stats...</p>
+        <p className="text-gray-500 py-4">Loading stats...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {recordCards.map((c, idx) => (
-            <div key={idx} className={`${c.color} text-white rounded-lg p-6 shadow-lg`}>
-              <h2 className="text-lg font-semibold">{c.title}</h2>
-              <p className="text-3xl font-bold">{c.value}</p>
+            <div
+              key={idx}
+              className="text-white rounded-xl p-6 shadow-xl flex items-center justify-between transition-transform duration-300 hover:scale-[1.02]"
+              style={{ backgroundColor: c.bg }}
+            >
+              <div>
+                <h2 className="text-lg font-semibold opacity-80">{c.title}</h2>
+                <p className="text-4xl font-extrabold mt-1">{c.value}</p>
+              </div>
+              <div className="opacity-70">
+                {React.cloneElement(c.icon, { size: 40 })}
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {/* Weekly Chart */}
-      <div className="bg-white p-6 rounded-lg shadow mb-10">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📅 Weekly Statistics</h3>
+      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-10">
+        <h3
+          className="text-xl font-bold mb-5 flex items-center"
+          style={{ color: COLORS.PRIMARY_GREEN }}
+        >
+          <TrendingUp size={20} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
+          Weekly Statistics
+        </h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={weekly}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="week" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <XAxis dataKey="week" stroke="#555" />
+            <YAxis stroke="#555" />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#fff",
+                border: `1px solid ${COLORS.ACCENT_GOLD}`,
+              }}
+            />
             <Legend />
-            <Line type="monotone" dataKey="total" stroke="#0a3b1f" />
-            <Line type="monotone" dataKey="approved" stroke="#b48222" />
-            <Line type="monotone" dataKey="rejected" stroke="#6b1a1a" />
+            <Line
+              type="monotone"
+              dataKey="total"
+              stroke={COLORS.PRIMARY_GREEN}
+              strokeWidth={3}
+              name="Total Received"
+            />
+            <Line
+              type="monotone"
+              dataKey="approved"
+              stroke={COLORS.ACCENT_GOLD}
+              strokeWidth={3}
+              name="Approved"
+            />
+            <Line
+              type="monotone"
+              dataKey="rejected"
+              stroke={COLORS.ALERT_RED}
+              strokeWidth={3}
+              name="Rejected"
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Monthly Chart */}
-      <div className="bg-white p-6 rounded-lg shadow mb-10">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📆 Monthly Statistics</h3>
+      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-10">
+        <h3
+          className="text-xl font-bold mb-5 flex items-center"
+          style={{ color: COLORS.PRIMARY_GREEN }}
+        >
+          <TrendingUp size={20} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
+          Monthly Statistics
+        </h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={monthly}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <XAxis dataKey="month" stroke="#555" />
+            <YAxis stroke="#555" />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#fff",
+                border: `1px solid ${COLORS.ACCENT_GOLD}`,
+              }}
+            />
             <Legend />
-            <Line type="monotone" dataKey="total" stroke="#0a3b1f" />
-            <Line type="monotone" dataKey="approved" stroke="#b48222" />
-            <Line type="monotone" dataKey="rejected" stroke="#6b1a1a" />
+            <Line
+              type="monotone"
+              dataKey="total"
+              stroke={COLORS.PRIMARY_GREEN}
+              strokeWidth={3}
+              name="Total Received"
+            />
+            <Line
+              type="monotone"
+              dataKey="approved"
+              stroke={COLORS.ACCENT_GOLD}
+              strokeWidth={3}
+              name="Approved"
+            />
+            <Line
+              type="monotone"
+              dataKey="rejected"
+              stroke={COLORS.ALERT_RED}
+              strokeWidth={3}
+              name="Rejected"
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Monthly Report Download */}
-      <div className="bg-white p-6 rounded-lg shadow mb-10">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📄 Download Monthly Report</h3>
+      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-10">
+        <h3
+          className="text-xl font-bold mb-5 flex items-center"
+          style={{ color: COLORS.PRIMARY_GREEN }}
+        >
+          <FileDown size={20} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
+          Download Monthly Report
+        </h3>
         <div className="flex items-center gap-4">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="border rounded px-3 py-2"
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-700 focus:border-green-700 transition"
           >
             {[...Array(12).keys()].map((m) => (
               <option key={m + 1} value={m + 1}>
@@ -135,68 +359,36 @@ const AdminDashboard = () => {
             type="number"
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="border rounded px-3 py-2 w-24"
+            className="border border-gray-300 rounded-lg px-3 py-2 w-24 focus:ring-green-700 focus:border-green-700 transition"
           />
           <button
             onClick={handleDownloadReport}
-            className="bg-[#0a3b1f] text-white px-4 py-2 rounded hover:bg-[#083018]"
+            className="text-white px-6 py-2.5 rounded-lg font-semibold flex items-center transition"
+            style={{
+              backgroundColor: COLORS.PRIMARY_GREEN,
+            }}
             disabled={reportDownloading}
           >
-            {reportDownloading ? "Downloading..." : "Download Report"}
+            {reportDownloading ? (
+              <>
+                Downloading...{" "}
+                <Loader2 size={18} className="animate-spin ml-2" />
+              </>
+            ) : (
+              <>
+                Download Report <FileDown size={18} className="ml-2" />
+              </>
+            )}
           </button>
         </div>
-        {reportError && <p className="text-red-600 mt-2">{reportError}</p>}
+        {reportError && (
+          <p className="text-red-600 mt-3 font-medium">⚠️ {reportError}</p>
+        )}
       </div>
 
-      {/* Recent Records Table */}
-      <div className="bg-white p-6 rounded-lg shadow mb-10">
-        <h3 className="text-lg font-bold mb-4 text-[#0a3b1f]">📝 Recently Added Records</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-200 rounded-lg">
-            <thead className="bg-[#0a3b1f] text-white">
-              <tr>
-                <th className="px-4 py-2">#</th>
-                <th className="px-4 py-2">Cause No.</th>
-                <th className="px-4 py-2">Deceased</th>
-                <th className="px-4 py-2">Court</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Date Received</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentRecords.slice(0, 10).map((r, idx) => (
-                <tr key={r._id} className="text-center border-b">
-                  <td className="px-4 py-2">{idx + 1}</td>
-                  <td className="px-4 py-2">{r.causeNo}</td>
-                  <td className="px-4 py-2">{r.nameOfDeceased}</td>
-                  <td className="px-4 py-2">{r.courtStation?.name}</td>
-                  <td
-                    className={`px-4 py-2 font-semibold ${
-                      r.form60Compliance === "Approved"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {r.form60Compliance}
-                  </td>
-                  <td className="px-4 py-2">
-                    {new Date(r.dateReceived).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-              {recentRecords.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-gray-500 py-4">
-                    No recent records found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Recently Added Records Table */}
+      <RecentRecordsTable recentRecords={recentRecords} />
 
-      {/* Error */}
       {error && <p className="text-red-600 mt-6 font-semibold">⚠️ {error}</p>}
     </div>
   );
