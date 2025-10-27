@@ -13,7 +13,8 @@ export const fetchAdminStats = createAsyncThunk(
       const res = await axios.get(`${ADMIN_API}/dashboard-stats`, {
         withCredentials: true,
       });
-      return res.data; // { success, totalRecords, approved, rejected, weekly, monthly }
+      // Backend returns: { success, totalRecords, approved, rejected, weekly, monthly }
+      return res.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Failed to fetch admin stats"
@@ -45,7 +46,7 @@ export const downloadMonthlyReport = createAsyncThunk(
   async ({ month, year }, { rejectWithValue }) => {
     try {
       const res = await axios.get(
-        `${ADMIN_API}/monthly-report`,
+        `${ADMIN_API}/monthly-report?month=${month}&year=${year}`,
         {
           responseType: "blob",
           withCredentials: true,
@@ -75,7 +76,7 @@ export const downloadMonthlyReport = createAsyncThunk(
 const initialState = {
   totalRecords: 0,
   approved: 0,
-  pending: 0,
+  rejected: 0,
   weekly: [],
   monthly: [],
   recentRecords: [],
@@ -102,7 +103,7 @@ const adminSlice = createSlice({
           action.payload;
         state.totalRecords = totalRecords || 0;
         state.approved = approved || 0;
-        state.pending = rejected || 0; // mapping "rejected" to "pending"
+        state.rejected = rejected || 0; // ✅ Correctly mapped to "rejected"
         state.weekly = weekly || [];
         state.monthly = monthly || [];
       })

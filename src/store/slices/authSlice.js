@@ -3,8 +3,8 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true;
 
-const AUTH_API = "https://principle-registry.onrender.com/api/v1/auth";
-const USER_API = "https://principle-registry.onrender.com/api/v1/user";
+const AUTH_API = "http://localhost:8000/api/v1/auth";
+const USER_API = "http://localhost:8000/api/v1/user";
 
 /* ==========================
    INITIAL STATE
