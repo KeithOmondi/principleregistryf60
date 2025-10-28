@@ -19,7 +19,7 @@ import RecordsPage from "./pages/user/RecordsPage";
 import AdminLayout from "./components/admin/AdminLayout/AdminLayout";
 import ManageRecordsPage from "./pages/admin/ManageRecordsPage";
 import UsersPage from "./pages/admin/UsersPage";
-import GazetteScannerPage from "./components/admin/GazetteScannerPage";
+import GazetteScannerDashboard from "./components/admin/GazetteScannerDashboard";
 
 // =================== USER (PUBLIC) ROUTES ===================
 export const userRoutes = [
@@ -75,7 +75,7 @@ export const adminRoutes = [
     path: "/admin/scan",
     element: (
       <AdminLayout>
-        <GazetteScannerPage />
+        <GazetteScannerDashboard />
       </AdminLayout>
     ),
   },

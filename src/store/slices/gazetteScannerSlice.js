@@ -1,11 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const SCAN_API = "https://principle-registry.onrender.com/api/v1/gazette";
+import api from "../../api/axios";
 
 /* ======================================================
-   🧠 THUNK: Scan Gazette PDF
+   THUNKS
 ====================================================== */
+
 export const scanGazette = createAsyncThunk(
   "gazetteScanner/scanGazette",
   async (file, { rejectWithValue }) => {
@@ -13,178 +12,142 @@ export const scanGazette = createAsyncThunk(
       const formData = new FormData();
       formData.append("scan", file);
 
-      const { data } = await axios.post(`${SCAN_API}/scan`, formData, {
+      const { data } = await api.post("/gazette/scan", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
-
       return data;
-    } catch (error) {
-      const message =
-        error.response?.data?.message || error.message || "Scan failed";
-      return rejectWithValue(message);
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Scan failed");
     }
   }
 );
 
-/* ======================================================
-   🧠 THUNK: Fetch Gazettes (metadata list)
-====================================================== */
 export const fetchGazettes = createAsyncThunk(
   "gazetteScanner/fetchGazettes",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`${SCAN_API}/get`, {
-        withCredentials: true,
-      });
+      const { data } = await api.get("/gazette/get", { withCredentials: true });
       return data.gazettes || [];
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to load gazettes"
-      );
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch gazettes");
     }
   }
 );
 
-/* ======================================================
-   🧠 THUNK: Fetch Specific Gazette Details
-====================================================== */
 export const fetchGazetteDetails = createAsyncThunk(
   "gazetteScanner/fetchGazetteDetails",
   async (gazetteId, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`${SCAN_API}/get/${gazetteId}`, {
-        withCredentials: true,
-      });
-      return data.gazette || {};
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to load gazette details"
-      );
+      const { data } = await api.get(`/gazette/get/${gazetteId}`, { withCredentials: true });
+      return data.gazette;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch details");
     }
   }
 );
 
-/* ======================================================
-   🧠 THUNK: Fetch Scan Logs
-====================================================== */
 export const fetchScanLogs = createAsyncThunk(
   "gazetteScanner/fetchScanLogs",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`${SCAN_API}/logs`, {
-        withCredentials: true,
-      });
+      const { data } = await api.get("/gazette/logs", { withCredentials: true });
       return data.logs || [];
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch logs"
-      );
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch logs");
     }
   }
 );
 
 /* ======================================================
-   🧩 SLICE
+   SLICE
 ====================================================== */
 const gazetteScannerSlice = createSlice({
   name: "gazetteScanner",
   initialState: {
-    loading: false,
-    error: null,
-    results: [],
-    publishedCount: 0,
-    totalRecords: 0,
-    message: "",
-    logs: [],
     gazettes: [],
+    gazetteDetails: {},
+    logs: [],
+    scanLoading: false,
+    scanError: null,
+    fetchLoading: false,
+    fetchError: null,
+    detailsLoadingId: null,
+    detailsError: null,
+    logsLoading: false,
+    logsError: null,
   },
   reducers: {
-    clearScanResults(state) {
-      state.results = [];
-      state.publishedCount = 0;
-      state.totalRecords = 0;
-      state.message = "";
-      state.error = null;
-    },
-    loadScanResults(state, action) {
-      const { updatedRecords, publishedCount, totalRecords } = action.payload;
-      state.results = updatedRecords || [];
-      state.publishedCount = publishedCount || 0;
-      state.totalRecords = totalRecords || 0;
-      state.message = "Results loaded from history.";
-      state.error = null;
+    resetScanState: (state) => {
+      state.scanLoading = false;
+      state.scanError = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // --- Scan Gazette ---
+      /* --- Scan --- */
       .addCase(scanGazette.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.scanLoading = true;
+        state.scanError = null;
       })
-      .addCase(scanGazette.fulfilled, (state, action) => {
-        state.loading = false;
-        state.results = action.payload.updatedRecords || [];
-        state.publishedCount = action.payload.publishedCount || 0;
-        state.totalRecords = action.payload.totalRecords || 0;
-        state.message = action.payload.message || "Scan completed";
-
-        if (action.payload.gazette) {
-          state.gazettes.unshift(action.payload.gazette);
-        }
+      .addCase(scanGazette.fulfilled, (state) => {
+        state.scanLoading = false;
       })
       .addCase(scanGazette.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+        state.scanLoading = false;
+        state.scanError = action.payload;
       })
 
-      // --- Fetch Gazettes ---
+      /* --- Fetch Gazettes --- */
       .addCase(fetchGazettes.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.fetchLoading = true;
+        state.fetchError = null;
       })
       .addCase(fetchGazettes.fulfilled, (state, action) => {
-        state.loading = false;
+        state.fetchLoading = false;
         state.gazettes = action.payload;
       })
       .addCase(fetchGazettes.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+        state.fetchLoading = false;
+        state.fetchError = action.payload;
       })
 
-      // --- Fetch Gazette Details ---
-      .addCase(fetchGazetteDetails.pending, (state) => {
-        state.message = "Loading scan results...";
-        state.error = null;
+      /* --- Fetch Details --- */
+      .addCase(fetchGazetteDetails.pending, (state, action) => {
+        state.detailsLoadingId = action.meta.arg;
+        state.detailsError = null;
       })
       .addCase(fetchGazetteDetails.fulfilled, (state, action) => {
-        const gazette = action.payload;
-        state.results = gazette.cases || [];
-        state.publishedCount = gazette.publishedCount || 0;
-        state.totalRecords = gazette.totalRecords || 0;
-        state.message = `Loaded results for ${gazette.fileName || "Gazette"}`;
+        state.detailsLoadingId = null;
+
+        const gazetteId = action.payload._id;
+        const existing = state.gazettes.find((g) => g._id === gazetteId);
+        if (existing) {
+          existing.fullCases = action.payload.cases; // store detailed cases in that gazette
+        }
+
+        state.gazetteDetails = action.payload;
       })
       .addCase(fetchGazetteDetails.rejected, (state, action) => {
-        state.message = "";
-        state.error = action.payload;
+        state.detailsLoadingId = null;
+        state.detailsError = action.payload;
       })
 
-      // --- Fetch Scan Logs ---
+      /* --- Fetch Logs --- */
       .addCase(fetchScanLogs.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.logsLoading = true;
+        state.logsError = null;
       })
       .addCase(fetchScanLogs.fulfilled, (state, action) => {
-        state.loading = false;
+        state.logsLoading = false;
         state.logs = action.payload;
       })
       .addCase(fetchScanLogs.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+        state.logsLoading = false;
+        state.logsError = action.payload;
       });
   },
 });
 
-export const { clearScanResults, loadScanResults } = gazetteScannerSlice.actions;
+export const { resetScanState } = gazetteScannerSlice.actions;
 export default gazetteScannerSlice.reducer;
