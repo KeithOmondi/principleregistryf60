@@ -435,7 +435,7 @@ const AdminDashboard = () => {
             </>
           ) : (
             <>
-              <FileDown size={20} /> Download {year}-{month} Report
+              <FileDown size={20} /> Download Report
             </>
           )}
         </button>
