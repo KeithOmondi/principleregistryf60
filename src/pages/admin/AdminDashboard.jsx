@@ -6,8 +6,8 @@ import {
   downloadMonthlyReport,
 } from "../../store/slices/adminSlice";
 import {
-  LineChart,
-  Line,
+  LineChart, // Back to LineChart
+  Line,       // Back to Line
   XAxis,
   YAxis,
   Tooltip,
@@ -22,7 +22,8 @@ import {
   Clock,
   FileDown,
   Loader2,
-  BarChart,
+  BarChart, // Lucide icon
+  TrendingUp, // Added a better icon for Line Charts
 } from "lucide-react";
 
 // ===================== BRAND COLORS =====================
@@ -34,20 +35,21 @@ const COLORS = {
   LIGHT_BG: "#F9F9F7",
 };
 
-// Custom Tooltip Component for Recharts
+// Custom Tooltip Component for Recharts (Updated to be more generic for line/bar)
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
+    const data = payload[0];
     return (
       <div
         className="p-3 shadow-lg rounded-lg text-sm border-2"
         style={{
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          borderColor: payload[0].stroke,
-          color: payload[0].stroke,
+          borderColor: data.stroke || data.fill,
+          color: COLORS.PRIMARY_GREEN,
         }}
       >
         <p className="font-bold mb-1">{label}</p>
-        <p className="text-gray-700">Count: <span className="font-semibold" style={{ color: payload[0].stroke }}>{`${payload[0].value}`}</span></p>
+        <p className="text-gray-700">{data.name}: <span className="font-semibold" style={{ color: data.stroke || data.fill }}>{`${data.value}`}</span></p>
       </div>
     );
   }
@@ -235,28 +237,38 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      
-       <p className="font-bold">Performance Graphs</p>
-      
+      ---
+      ## 📈 Performance Graphs
+      ---
 
       {/* CHARTS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-        {/* WEEKLY CHART */}
+        {/* WEEKLY CHART (LINE CHART) */}
         <div className="bg-white p-6 rounded-xl shadow-xl border-t-4" style={{ borderTopColor: COLORS.PRIMARY_GREEN }}>
-          <h3 className="text-lg font-bold mb-4" style={{ color: COLORS.PRIMARY_GREEN }}>
+          <h3 className="text-lg font-bold mb-4 flex items-center" style={{ color: COLORS.PRIMARY_GREEN }}>
+            <TrendingUp size={20} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
             Weekly Record Trend
           </h3>
           {weekly.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={weekly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="week" stroke="#555" fontSize={12} />
-                <YAxis stroke="#555" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                <XAxis 
+                  dataKey="week" 
+                  stroke="#555" 
+                  fontSize={12} 
+                  interval={0} 
+                  angle={-15} 
+                  textAnchor="end" 
+                  height={45} 
+                />
+                <YAxis allowDecimals={false} stroke="#555" fontSize={12} />
+                <Tooltip content={<CustomTooltip name="Records Filed" />} />
                 <Legend wrapperStyle={{ paddingTop: '15px' }} />
                 <Line
                   type="monotone"
                   dataKey="count"
+                  name="Records Filed"
                   stroke={COLORS.PRIMARY_GREEN}
                   strokeWidth={3}
                   dot={{ r: 4, fill: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
@@ -269,22 +281,24 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        {/* MONTHLY CHART */}
+        {/* MONTHLY CHART (LINE CHART) */}
         <div className="bg-white p-6 rounded-xl shadow-xl border-t-4" style={{ borderTopColor: COLORS.ACCENT_GOLD }}>
-          <h3 className="text-lg font-bold mb-4" style={{ color: COLORS.DARK_GOLD }}>
+          <h3 className="text-lg font-bold mb-4 flex items-center" style={{ color: COLORS.DARK_GOLD }}>
+            <TrendingUp size={20} className="mr-2" style={{ color: COLORS.DARK_GOLD }} />
             Monthly Record Trend
           </h3>
           {monthly.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
                 <XAxis dataKey="month" stroke="#555" fontSize={12} />
-                <YAxis stroke="#555" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
+                <YAxis allowDecimals={false} stroke="#555" fontSize={12} />
+                <Tooltip content={<CustomTooltip name="Records Filed" />} />
                 <Legend wrapperStyle={{ paddingTop: '15px' }} />
                 <Line
                   type="monotone"
                   dataKey="count"
+                  name="Records Filed"
                   stroke={COLORS.ACCENT_GOLD}
                   strokeWidth={3}
                   dot={{ r: 4, fill: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
@@ -298,9 +312,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-     
-      <p className="font-bold">Monthly Report Generation</p>
-    
+      ---
+      ## 📥 Monthly Report Generation
+      ---
       
       {/* DOWNLOAD REPORT */}
       <div className="bg-white p-6 rounded-xl shadow-xl flex flex-wrap items-center gap-4 mb-10 border-l-4" style={{ borderLeftColor: COLORS.PRIMARY_GREEN }}>
@@ -351,7 +365,7 @@ const AdminDashboard = () => {
             </>
           ) : (
             <>
-              <FileDown size={20} /> Download Report
+              <FileDown size={20} /> Download {year}-{month} Report
             </>
           )}
         </button>
