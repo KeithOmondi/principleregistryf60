@@ -1,7 +1,6 @@
+// src/store/slices/adminSlice.jsx
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const ADMIN_API = "https://principle-registry.onrender.com/api/v1/records";
+import api from "../../api/axios";
 
 // ==================== THUNKS ====================
 
@@ -10,9 +9,7 @@ export const fetchAdminStats = createAsyncThunk(
   "admin/fetchStats",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${ADMIN_API}/dashboard-stats`, {
-        withCredentials: true,
-      });
+      const res = await api.get("/records/dashboard-stats");
       // Backend returns: { success, totalRecords, approved, rejected, weekly, monthly }
       return res.data;
     } catch (err) {
@@ -28,9 +25,7 @@ export const fetchRecentRecords = createAsyncThunk(
   "admin/fetchRecentRecords",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${ADMIN_API}/recent`, {
-        withCredentials: true,
-      });
+      const res = await api.get("/records/recent");
       return res.data.recentRecords || [];
     } catch (err) {
       return rejectWithValue(
@@ -45,11 +40,10 @@ export const downloadMonthlyReport = createAsyncThunk(
   "admin/downloadMonthlyReport",
   async ({ month, year }, { rejectWithValue }) => {
     try {
-      const res = await axios.get(
-        `${ADMIN_API}/monthly-report?month=${month}&year=${year}`,
+      const res = await api.get(
+        `/records/monthly-report?month=${month}&year=${year}`,
         {
           responseType: "blob",
-          withCredentials: true,
         }
       );
 
@@ -103,7 +97,7 @@ const adminSlice = createSlice({
           action.payload;
         state.totalRecords = totalRecords || 0;
         state.approved = approved || 0;
-        state.rejected = rejected || 0; // ✅ Correctly mapped to "rejected"
+        state.rejected = rejected || 0;
         state.weekly = weekly || [];
         state.monthly = monthly || [];
       })

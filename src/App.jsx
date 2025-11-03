@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { loadUser } from "./store/slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { loadUser, selectAuthLoading } from "./store/slices/authSlice";
 
 import { userRoutes, adminRoutes, authRoutes } from "./routes";
 import PrivateRoute from "./auth/PrivateRoute";
@@ -12,10 +12,20 @@ import { ToastContainer } from "react-toastify";
 
 function App() {
   const dispatch = useDispatch();
+  const authLoading = useSelector(selectAuthLoading); // new selector
 
   useEffect(() => {
-    dispatch(loadUser()); // ✅ ensures user is loaded from backend cookie
+    dispatch(loadUser()); // Load user session on app start
   }, [dispatch]);
+
+  if (authLoading) {
+    // Optional: show a full-page loader while restoring session
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-xl font-semibold text-gray-700">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

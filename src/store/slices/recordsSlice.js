@@ -1,29 +1,16 @@
-// src/redux/slices/recordsSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const RECORD_API = "https://principle-registry.onrender.com/api/v1/records";
+import api from "../../api/axios";
 
 /* ============================================================
-   🔹 Helper: Attach Token to Requests
-============================================================ */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-/* ============================================================
-   🔹 ASYNC THUNKS
+🔹 ASYNC THUNKS
 ============================================================ */
 
-// 🟩 Fetch user-specific records
+// Fetch user-specific records
 export const fetchRecords = createAsyncThunk(
   "records/fetchUserRecords",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${RECORD_API}/user-records`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await api.get("/records/user-records");
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -33,7 +20,7 @@ export const fetchRecords = createAsyncThunk(
   }
 );
 
-// 🟨 Fetch all records (Admin only)
+// Fetch all records (Admin)
 export const fetchAllRecordsForAdmin = createAsyncThunk(
   "records/fetchAllAdmin",
   async (
@@ -41,10 +28,8 @@ export const fetchAllRecordsForAdmin = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const res = await axios.get(`${RECORD_API}/admin`, {
+      const res = await api.get("/records/admin", {
         params: { page, limit, search, court, status },
-        headers: getAuthHeaders(),
-        withCredentials: true,
       });
       return res.data;
     } catch (err) {
@@ -55,14 +40,12 @@ export const fetchAllRecordsForAdmin = createAsyncThunk(
   }
 );
 
-// 🟩 Add a single record
+// Add a record
 export const addRecord = createAsyncThunk(
   "records/add",
   async (payload, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${RECORD_API}/create`, payload, {
-        headers: getAuthHeaders(),
-      });
+      const res = await api.post("/records/create", payload);
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -72,17 +55,12 @@ export const addRecord = createAsyncThunk(
   }
 );
 
-
-
-// 🟨 Update a single record
+// Update a record
 export const updateRecord = createAsyncThunk(
   "records/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const res = await axios.put(`${RECORD_API}/update/${id}`, data, {
-        headers: getAuthHeaders(),
-        withCredentials: true,
-      });
+      const res = await api.put(`/records/update/${id}`, data);
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -92,14 +70,12 @@ export const updateRecord = createAsyncThunk(
   }
 );
 
-// 🟥 Delete a record
+// Delete a record
 export const deleteRecord = createAsyncThunk(
   "records/delete",
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${RECORD_API}/delete/${id}`, {
-        headers: getAuthHeaders(),
-      });
+      await api.delete(`/records/delete/${id}`);
       return id;
     } catch (err) {
       return rejectWithValue(
@@ -109,18 +85,15 @@ export const deleteRecord = createAsyncThunk(
   }
 );
 
-// 🟧 Bulk update “Date Forwarded to G.P.”
+// Bulk update “Date Forwarded to G.P.”
 export const updateMultipleRecordsDateForwarded = createAsyncThunk(
   "records/updateMultipleRecordsDateForwarded",
   async ({ ids, date }, { rejectWithValue }) => {
     try {
-      const res = await axios.patch(
-        `${RECORD_API}/bulk-update-forwarded`,
-        { ids, date },
-        {
-          headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-        }
-      );
+      const res = await api.patch("/records/bulk-update-forwarded", {
+        ids,
+        date,
+      });
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -130,14 +103,12 @@ export const updateMultipleRecordsDateForwarded = createAsyncThunk(
   }
 );
 
-// 🟪 Admin: Get dashboard stats
+// Admin dashboard stats
 export const fetchAdminDashboardStats = createAsyncThunk(
   "records/fetchDashboardStats",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${RECORD_API}/dashboard-stats`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await api.get("/records/dashboard-stats");
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -147,14 +118,12 @@ export const fetchAdminDashboardStats = createAsyncThunk(
   }
 );
 
-// 🟪 Admin: Get recent records
+// Admin recent records
 export const fetchRecentRecords = createAsyncThunk(
   "records/fetchRecentRecords",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${RECORD_API}/recent`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await api.get("/records/recent");
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -164,10 +133,8 @@ export const fetchRecentRecords = createAsyncThunk(
   }
 );
 
-
-
 /* ============================================================
-   🔹 INITIAL STATE
+🔹 INITIAL STATE
 ============================================================ */
 const initialState = {
   records: [],
@@ -187,7 +154,7 @@ const initialState = {
 };
 
 /* ============================================================
-   🔹 SLICE DEFINITION
+🔹 SLICE
 ============================================================ */
 const recordsSlice = createSlice({
   name: "records",
@@ -224,7 +191,7 @@ const recordsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // 🔹 User records
+      // User records
       .addCase(fetchRecords.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -244,7 +211,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Admin: fetch all records
+      // Admin fetch
       .addCase(fetchAllRecordsForAdmin.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -267,7 +234,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Add record
+      // Add record
       .addCase(addRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -283,9 +250,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      
-
-      // 🔹 Update record
+      // Update record
       .addCase(updateRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -303,7 +268,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Delete record
+      // Delete record
       .addCase(deleteRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -319,7 +284,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Bulk update Date Forwarded
+      // Bulk update
       .addCase(updateMultipleRecordsDateForwarded.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -337,7 +302,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Admin: Dashboard stats
+      // Dashboard stats
       .addCase(fetchAdminDashboardStats.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -351,7 +316,7 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Admin: Recent records
+      // Recent records
       .addCase(fetchRecentRecords.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -365,14 +330,12 @@ const recordsSlice = createSlice({
       .addCase(fetchRecentRecords.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-
-    
+      });
   },
 });
 
 /* ============================================================
-   🔹 EXPORTS
+🔹 EXPORTS
 ============================================================ */
 export const {
   clearSelectedRecord,
