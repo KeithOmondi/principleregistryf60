@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAdminStats,
@@ -6,15 +6,16 @@ import {
   downloadMonthlyReport,
 } from "../../store/slices/adminSlice";
 import {
-  LineChart, // Back to LineChart
-  Line,       // Back to Line
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
   Legend,
-} from "recharts";
+}
+ from "recharts";
 import {
   List,
   AlertTriangle,
@@ -22,8 +23,8 @@ import {
   Clock,
   FileDown,
   Loader2,
-  BarChart, // Lucide icon
-  TrendingUp, // Added a better icon for Line Charts
+  BarChart,
+  TrendingUp,
 } from "lucide-react";
 
 // ===================== BRAND COLORS =====================
@@ -35,27 +36,30 @@ const COLORS = {
   LIGHT_BG: "#F9F9F7",
 };
 
-// Custom Tooltip Component for Recharts (Updated to be more generic for line/bar)
+// ===================== CUSTOM TOOLTIP (Updated for Multi-Line Data) =====================
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    const data = payload[0];
     return (
       <div
         className="p-3 shadow-lg rounded-lg text-sm border-2"
         style={{
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          borderColor: data.stroke || data.fill,
+          borderColor: COLORS.PRIMARY_GREEN, // Use primary color for consistency
           color: COLORS.PRIMARY_GREEN,
         }}
       >
         <p className="font-bold mb-1">{label}</p>
-        <p className="text-gray-700">{data.name}: <span className="font-semibold" style={{ color: data.stroke || data.fill }}>{`${data.value}`}</span></p>
+        {payload.map((item, index) => (
+            <p key={index} className="text-gray-700 mt-1 flex justify-between gap-4">
+                <span className="font-medium" style={{ color: item.stroke }}>{item.name}:</span>
+                <span className="font-extrabold" style={{ color: item.stroke }}>{`${item.value}`}</span>
+            </p>
+        ))}
       </div>
     );
   }
   return null;
 };
-
 
 // ===================== RECENT RECORDS TABLE (Retained) =====================
 const RecentRecordsTable = ({ records = [] }) => (
@@ -172,6 +176,47 @@ const AdminDashboard = () => {
   const handleDownload = () => {
     dispatch(downloadMonthlyReport({ month, year }));
   };
+  
+  // =======================================================
+  // 🎯 DATA TRANSFORMATION FOR GRAPHS (RE-INTRODUCED)
+  // =======================================================
+  
+  const MONTH_NAMES = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+
+  // Helper function to format weekly data labels
+  const formatWeeklyData = (data) => {
+    // Reverse the data so it reads from oldest (left) to newest (right)
+    return [...data].reverse().map((w, index) => ({
+      ...w,
+      // Map the week string to a simple "Week X" label for the XAxis
+      weekLabel: `Week ${index + 1}`,
+    }));
+  };
+
+  // Helper function to format monthly data labels
+  const formatMonthlyData = (data) => {
+    // Reverse the data so it reads from oldest (left) to newest (right)
+    return [...data].reverse().map(m => {
+      // Assuming 'month' is formatted as "M/YYYY" (e.g., "11/2025")
+      const [monthNum, year] = m.month.split('/').map(Number);
+      return {
+        ...m,
+        // Map the month number to a readable "MMM YYYY" format
+        monthLabel: `${MONTH_NAMES[monthNum - 1]} ${year}`,
+      };
+    });
+  };
+
+  // Use useMemo to ensure formatted data is only recalculated when weekly/monthly changes
+  const formattedWeeklyData = useMemo(() => formatWeeklyData(weekly), [weekly]);
+  const formattedMonthlyData = useMemo(() => formatMonthlyData(monthly), [monthly]);
+  
+  // =======================================================
+  // 🎯 END DATA TRANSFORMATION
+  // =======================================================
 
   const summaryCards = [
     {
@@ -237,24 +282,25 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      ---
-      ## 📈 Performance Graphs
-      ---
+      
+      <p className="font-bold">Performance Graphs</p>
+    
 
-      {/* CHARTS */}
+      {/* CHARTS CONTAINER */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-        {/* WEEKLY CHART (LINE CHART) */}
+        
+        {/* 1. WEEKLY COMPLIANCE TREND CHART (MULTI-LINE, CLEAN LABELS) */}
         <div className="bg-white p-6 rounded-xl shadow-xl border-t-4" style={{ borderTopColor: COLORS.PRIMARY_GREEN }}>
           <h3 className="text-lg font-bold mb-4 flex items-center" style={{ color: COLORS.PRIMARY_GREEN }}>
             <TrendingUp size={20} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
-            Weekly Record Trend
+            Weekly Record Compliance Trend
           </h3>
-          {weekly.length > 0 ? (
+          {formattedWeeklyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={weekly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={formattedWeeklyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
                 <XAxis 
-                  dataKey="week" 
+                  dataKey="weekLabel" // **FIXED: Use formatted data key**
                   stroke="#555" 
                   fontSize={12} 
                   interval={0} 
@@ -263,16 +309,29 @@ const AdminDashboard = () => {
                   height={45} 
                 />
                 <YAxis allowDecimals={false} stroke="#555" fontSize={12} />
-                <Tooltip content={<CustomTooltip name="Records Filed" />} />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ paddingTop: '15px' }} />
+                
+                {/* Approved Records Line (PRIMARY GREEN) */}
                 <Line
                   type="monotone"
-                  dataKey="count"
-                  name="Records Filed"
+                  dataKey="approved" 
+                  name="Approved"
                   stroke={COLORS.PRIMARY_GREEN}
                   strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
-                  activeDot={{ r: 6, fill: COLORS.ACCENT_GOLD, stroke: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
+                  dot={{ r: 4, fill: COLORS.PRIMARY_GREEN }}
+                  activeDot={{ r: 6, stroke: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
+                />
+                
+                {/* Rejected Records Line (ACCENT GOLD) */}
+                <Line
+                  type="monotone"
+                  dataKey="rejected" 
+                  name="Rejected"
+                  stroke={COLORS.ACCENT_GOLD}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.ACCENT_GOLD }}
+                  activeDot={{ r: 6, stroke: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -281,28 +340,41 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        {/* MONTHLY CHART (LINE CHART) */}
+        {/* 2. MONTHLY COMPLIANCE TREND CHART (MULTI-LINE, CLEAN LABELS) */}
         <div className="bg-white p-6 rounded-xl shadow-xl border-t-4" style={{ borderTopColor: COLORS.ACCENT_GOLD }}>
           <h3 className="text-lg font-bold mb-4 flex items-center" style={{ color: COLORS.DARK_GOLD }}>
             <TrendingUp size={20} className="mr-2" style={{ color: COLORS.DARK_GOLD }} />
-            Monthly Record Trend
+            Monthly Record Compliance Trend
           </h3>
-          {monthly.length > 0 ? (
+          {formattedMonthlyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={formattedMonthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
-                <XAxis dataKey="month" stroke="#555" fontSize={12} />
+                <XAxis dataKey="monthLabel" stroke="#555" fontSize={12} /> {/* **FIXED: Use formatted data key** */}
                 <YAxis allowDecimals={false} stroke="#555" fontSize={12} />
-                <Tooltip content={<CustomTooltip name="Records Filed" />} />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ paddingTop: '15px' }} />
+                
+                {/* Approved Records Line (PRIMARY GREEN) */}
                 <Line
                   type="monotone"
-                  dataKey="count"
-                  name="Records Filed"
+                  dataKey="approved"
+                  name="Approved"
+                  stroke={COLORS.PRIMARY_GREEN}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.PRIMARY_GREEN }}
+                  activeDot={{ r: 6, stroke: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
+                />
+                
+                {/* Rejected Records Line (ACCENT GOLD) */}
+                <Line
+                  type="monotone"
+                  dataKey="rejected"
+                  name="Rejected"
                   stroke={COLORS.ACCENT_GOLD}
                   strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
-                  activeDot={{ r: 6, fill: COLORS.PRIMARY_GREEN, stroke: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
+                  dot={{ r: 4, fill: COLORS.ACCENT_GOLD }}
+                  activeDot={{ r: 6, stroke: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -312,9 +384,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      ---
-      ## 📥 Monthly Report Generation
-      ---
+      <p className="font-bold">Monthly Report Generation</p>
       
       {/* DOWNLOAD REPORT */}
       <div className="bg-white p-6 rounded-xl shadow-xl flex flex-wrap items-center gap-4 mb-10 border-l-4" style={{ borderLeftColor: COLORS.PRIMARY_GREEN }}>
