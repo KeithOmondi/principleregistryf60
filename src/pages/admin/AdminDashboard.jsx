@@ -21,9 +21,8 @@ import {
   CheckCircle,
   Clock,
   FileDown,
-  TrendingUp,
-  BarChart,
   Loader2,
+  BarChart,
 } from "lucide-react";
 
 // ===================== BRAND COLORS =====================
@@ -35,7 +34,28 @@ const COLORS = {
   LIGHT_BG: "#F9F9F7",
 };
 
-// ===================== SUBCOMPONENT: RECENT RECORDS TABLE =====================
+// Custom Tooltip Component for Recharts
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className="p-3 shadow-lg rounded-lg text-sm border-2"
+        style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: payload[0].stroke,
+          color: payload[0].stroke,
+        }}
+      >
+        <p className="font-bold mb-1">{label}</p>
+        <p className="text-gray-700">Count: <span className="font-semibold" style={{ color: payload[0].stroke }}>{`${payload[0].value}`}</span></p>
+      </div>
+    );
+  }
+  return null;
+};
+
+
+// ===================== RECENT RECORDS TABLE (Retained) =====================
 const RecentRecordsTable = ({ records = [] }) => (
   <div className="bg-white p-6 rounded-xl shadow-2xl border border-gray-200 mb-10">
     <h3
@@ -123,13 +143,13 @@ const RecentRecordsTable = ({ records = [] }) => (
   </div>
 );
 
-// ===================== MAIN COMPONENT =====================
+// ===================== MAIN DASHBOARD =====================
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const {
     totalRecords,
     approved,
-    rejected, // ✅ updated
+    rejected,
     weekly,
     monthly,
     recentRecords,
@@ -165,8 +185,8 @@ const AdminDashboard = () => {
       icon: <CheckCircle />,
     },
     {
-      title: "Rejected Records", // ✅ label updated
-      value: rejected, // ✅ value updated
+      title: "Rejected Records",
+      value: rejected,
       bg: COLORS.ALERT_RED,
       icon: <AlertTriangle />,
     },
@@ -187,22 +207,22 @@ const AdminDashboard = () => {
       </div>
 
       {/* SUMMARY CARDS */}
-      <h2
-        className="text-xl font-semibold mb-5 flex items-center"
-        style={{ color: COLORS.PRIMARY_GREEN }}
-      >
+      <h2 className="text-xl font-semibold mb-5 flex items-center" style={{ color: COLORS.PRIMARY_GREEN }}>
         <BarChart size={24} className="mr-2" style={{ color: COLORS.ACCENT_GOLD }} />
         Records Overview
       </h2>
 
       {loading ? (
-        <p className="text-gray-500 py-4">Loading stats...</p>
+        <div className="flex justify-center py-10">
+          <Loader2 className="h-10 w-10 animate-spin" style={{ color: COLORS.PRIMARY_GREEN }} />
+          <p className="ml-3 text-lg text-gray-600">Loading Dashboard Data...</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {summaryCards.map((c, idx) => (
             <div
               key={idx}
-              className="text-white rounded-xl p-6 shadow-xl flex items-center justify-between transition-transform duration-300 hover:scale-[1.02]"
+              className="text-white rounded-xl p-6 shadow-xl flex items-center justify-between transition-transform duration-300 hover:scale-[1.02] transform"
               style={{ backgroundColor: c.bg }}
             >
               <div>
@@ -215,9 +235,131 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* CHARTS AND DOWNLOAD SECTIONS REMAIN UNCHANGED */}
-      {/* ... (keep your chart + report sections as-is) ... */}
+      
+       <p className="font-bold">Performance Graphs</p>
+      
 
+      {/* CHARTS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        {/* WEEKLY CHART */}
+        <div className="bg-white p-6 rounded-xl shadow-xl border-t-4" style={{ borderTopColor: COLORS.PRIMARY_GREEN }}>
+          <h3 className="text-lg font-bold mb-4" style={{ color: COLORS.PRIMARY_GREEN }}>
+            Weekly Record Trend
+          </h3>
+          {weekly.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={weekly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="week" stroke="#555" fontSize={12} />
+                <YAxis stroke="#555" fontSize={12} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '15px' }} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke={COLORS.PRIMARY_GREEN}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: COLORS.ACCENT_GOLD, stroke: COLORS.PRIMARY_GREEN, strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-gray-500 p-10 text-center italic">No weekly data available for charting.</p>
+          )}
+        </div>
+
+        {/* MONTHLY CHART */}
+        <div className="bg-white p-6 rounded-xl shadow-xl border-t-4" style={{ borderTopColor: COLORS.ACCENT_GOLD }}>
+          <h3 className="text-lg font-bold mb-4" style={{ color: COLORS.DARK_GOLD }}>
+            Monthly Record Trend
+          </h3>
+          {monthly.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={monthly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="month" stroke="#555" fontSize={12} />
+                <YAxis stroke="#555" fontSize={12} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '15px' }} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke={COLORS.ACCENT_GOLD}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: COLORS.PRIMARY_GREEN, stroke: COLORS.ACCENT_GOLD, strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-gray-500 p-10 text-center italic">No monthly data available for charting.</p>
+          )}
+        </div>
+      </div>
+
+     
+      <p className="font-bold">Monthly Report Generation</p>
+    
+      
+      {/* DOWNLOAD REPORT */}
+      <div className="bg-white p-6 rounded-xl shadow-xl flex flex-wrap items-center gap-4 mb-10 border-l-4" style={{ borderLeftColor: COLORS.PRIMARY_GREEN }}>
+        <label className="text-gray-700 font-semibold whitespace-nowrap">Select Report Period:</label>
+        
+        {/* Month Input */}
+        <div className="flex flex-col">
+            <span className='text-xs text-gray-500 mb-1'>Month (1-12)</span>
+            <input
+              type="number"
+              min="1"
+              max="12"
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              className="border border-gray-300 px-3 py-2 rounded-lg w-20 text-center focus:ring-2 focus:ring-offset-1 focus:outline-none transition duration-150"
+              style={{ borderColor: COLORS.ACCENT_GOLD, color: COLORS.PRIMARY_GREEN }}
+            />
+        </div>
+        
+        {/* Year Input */}
+        <div className="flex flex-col">
+            <span className='text-xs text-gray-500 mb-1'>Year</span>
+            <input
+              type="number"
+              min="2020"
+              max={new Date().getFullYear()}
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="border border-gray-300 px-3 py-2 rounded-lg w-24 text-center focus:ring-2 focus:ring-offset-1 focus:outline-none transition duration-150"
+              style={{ borderColor: COLORS.ACCENT_GOLD, color: COLORS.PRIMARY_GREEN }}
+            />
+        </div>
+        
+        <button
+          onClick={handleDownload}
+          disabled={reportDownloading}
+          className={`
+            text-white px-6 py-2 rounded-lg flex items-center gap-2 font-bold transition duration-300 shadow-md
+            ${reportDownloading 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-[#004832] hover:bg-[#006442] active:bg-[#003a2a] hover:shadow-lg'
+            }
+          `}
+        >
+          {reportDownloading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" /> Downloading...
+            </>
+          ) : (
+            <>
+              <FileDown size={20} /> Download Report
+            </>
+          )}
+        </button>
+        
+        {reportError && <p className="text-sm text-red-600 font-medium ml-4">⚠️ Error: {reportError}</p>}
+      </div>
+
+      {/* RECENT RECORDS */}
       <RecentRecordsTable records={recentRecords} />
 
       {error && <p className="text-red-600 mt-6 font-semibold">⚠️ {error}</p>}

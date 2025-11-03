@@ -1,4 +1,3 @@
-// pages/auth/Signup.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,7 +7,9 @@ import { toast } from "react-toastify";
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, message, pendingEmail } = useSelector((state) => state.auth);
+  const { loading, error, message, pendingEmail } = useSelector(
+    (state) => state.auth
+  );
 
   const [formData, setFormData] = useState({
     name: "",
@@ -37,95 +38,118 @@ const Signup = () => {
   }, [message, error, pendingEmail, navigate, dispatch]);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4">
-      {/* Blurred Judiciary Logo Background */}
-      <div
-        className="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-10 blur-sm"
-        style={{
-          backgroundImage:
-            "url('https://judiciary.go.ke/wp-content/uploads/2023/05/logo1-Copy-2.png')",
-        }}
-      ></div>
-
-      {/* Signup Card */}
-      <div className="relative z-10 max-w-md w-full bg-white shadow-2xl rounded-2xl p-8 sm:p-10 space-y-7 border border-[#0a3b1f]/30">
-        <h2 className="text-center text-3xl font-extrabold text-[#0a3b1f]">
-          Create Your Account
-        </h2>
-
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          {/* Full Name */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-[#0a3b1f] mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              required
-              onChange={handleChange}
-              value={formData.name}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#b48222] focus:border-[#b48222]"
-              placeholder="John Doe"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-white shadow-2xl rounded-2xl overflow-hidden">
+        {/* LEFT SECTION — IMAGE / BRAND / MESSAGE */}
+        <div className="hidden md:flex flex-col items-center justify-center bg-[#0a3b1f] text-white p-10 relative">
+          <div className="text-center space-y-6">
+            <h2 className="text-3xl font-bold tracking-wide">
+              Welcome to the{" "}
+              <span className="text-[#b48222]">Principal Registry</span>
+            </h2>
+            <p className="text-green-100 text-sm max-w-md mx-auto">
+              Register for an account to securely manage and track legal documents.
+            </p>
           </div>
 
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#0a3b1f] mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              required
-              onChange={handleChange}
-              value={formData.email}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#b48222] focus:border-[#b48222]"
-              placeholder="you@example.com"
-            />
+          <img
+            src="https://judiciary.go.ke/wp-content/uploads/2023/05/logo1-Copy-2.png"
+            alt="Judiciary Logo"
+            className="w-3/4 mt-8 opacity-90"
+          />
+
+          <div className="absolute bottom-6 text-xs text-green-200">
+            © {new Date().getFullYear()} Judiciary of Kenya — All rights reserved.
           </div>
+        </div>
 
-          {/* Password */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[#0a3b1f] mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              required
-              onChange={handleChange}
-              value={formData.password}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#b48222] focus:border-[#b48222]"
-              placeholder="••••••••"
-            />
+        {/* RIGHT SECTION — SIGNUP FORM */}
+        <div className="p-8 md:p-12 flex flex-col justify-center">
+          <h1 className="text-2xl font-semibold text-gray-800 text-center mb-6">
+            Create Your Account
+          </h1>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Full Name */}
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-600 mb-1"
+              >
+                Full Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="John Doe"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-600 mb-1"
+              >
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-600 mb-1"
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full bg-[#0a3b1f] text-white font-semibold py-2.5 rounded-lg hover:bg-[#085530] transition flex items-center justify-center gap-2 ${
+                loading ? "opacity-75 cursor-not-allowed" : "focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+              }`}
+            >
+              {loading ? "Creating Account..." : "Sign Up"}
+            </button>
+          </form>
+
+          {/* Already have account */}
+          <div className="text-center text-sm text-gray-500 mt-5">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-[#b48222] hover:underline font-medium"
+            >
+              Log in
+            </Link>
           </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3 px-4 rounded-lg font-bold text-white shadow-md transition duration-300 ease-in-out ${
-              loading
-                ? "bg-[#0a3b1f]/60 cursor-not-allowed"
-                : "bg-[#0a3b1f] hover:bg-[#085530] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#b48222]"
-            }`}
-          >
-            {loading ? "Creating Account..." : "Sign Up"}
-          </button>
-        </form>
-
-        {/* Already have account */}
-        <p className="text-center text-sm text-gray-600">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-[#b48222] font-semibold hover:underline hover:text-[#0a3b1f] transition duration-150 ease-in-out"
-          >
-            Log in
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
