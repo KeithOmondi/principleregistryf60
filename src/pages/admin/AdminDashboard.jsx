@@ -249,7 +249,7 @@ const AdminDashboard = () => {
           className="h-16 w-auto"
         />
         <h1 className="text-3xl font-bold" style={{ color: COLORS.PRIMARY_GREEN }}>
-          Probate Records Admin Dashboard
+          ORHC URITHI
         </h1>
       </div>
 

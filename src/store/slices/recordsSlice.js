@@ -1,3 +1,4 @@
+// src/store/slices/recordsSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
@@ -34,7 +35,7 @@ export const fetchAllRecordsForAdmin = createAsyncThunk(
       return res.data;
     } catch (err) {
       return rejectWithValue(
-        err.response?.data?.message || "❌ Failed to fetch records"
+        err.response?.data?.message || "❌ Failed to fetch admin records"
       );
     }
   }
@@ -46,7 +47,7 @@ export const addRecord = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const res = await api.post("/records/create", payload);
-      return res.data;
+      return res.data.record || res.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "❌ Failed to add record"
@@ -61,7 +62,7 @@ export const updateRecord = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const res = await api.put(`/records/update/${id}`, data);
-      return res.data;
+      return res.data.record || res.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "❌ Failed to update record"
@@ -94,7 +95,7 @@ export const updateMultipleRecordsDateForwarded = createAsyncThunk(
         ids,
         date,
       });
-      return res.data;
+      return res.data; // backend returns updated records or message
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "❌ Failed to update records"
@@ -103,7 +104,7 @@ export const updateMultipleRecordsDateForwarded = createAsyncThunk(
   }
 );
 
-// Admin dashboard stats
+// Dashboard stats
 export const fetchAdminDashboardStats = createAsyncThunk(
   "records/fetchDashboardStats",
   async (_, { rejectWithValue }) => {
@@ -118,7 +119,7 @@ export const fetchAdminDashboardStats = createAsyncThunk(
   }
 );
 
-// Admin recent records
+// Recent records
 export const fetchRecentRecords = createAsyncThunk(
   "records/fetchRecentRecords",
   async (_, { rejectWithValue }) => {
@@ -191,57 +192,58 @@ const recordsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // User records
+      /* 🧩 FETCH USER RECORDS */
       .addCase(fetchRecords.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchRecords.fulfilled, (state, action) => {
         state.loading = false;
-        state.records = Array.isArray(action.payload.records)
-          ? action.payload.records
-          : [];
-        state.currentPage = Number(action.payload.currentPage) || 1;
-        state.totalPages = Number(action.payload.totalPages) || 1;
-        state.totalRecords = Number(action.payload.totalRecords) || 0;
-        state.pageSize = Number(action.payload.pageSize) || state.pageSize;
+        state.records = (action.payload.records || []).map((r) => ({
+          ...r,
+          receivingLeadTime: r.receivingLeadTime ?? null,
+          forwardingLeadTime: r.forwardingLeadTime ?? null,
+        }));
+        state.currentPage = action.payload.currentPage || 1;
+        state.totalPages = action.payload.totalPages || 1;
+        state.totalRecords = action.payload.totalRecords || 0;
       })
       .addCase(fetchRecords.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // Admin fetch
+      /* 🧩 ADMIN FETCH ALL */
       .addCase(fetchAllRecordsForAdmin.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchAllRecordsForAdmin.fulfilled, (state, action) => {
         state.loading = false;
-        state.records = Array.isArray(action.payload.records)
-          ? action.payload.records
-          : [];
-        state.currentPage = Number(action.payload.currentPage) || 1;
-        state.totalPages = Number(action.payload.totalPages) || 1;
-        state.totalRecords = Number(action.payload.totalRecords) || 0;
-        state.pageSize =
-          Number(action.payload.pageSize) ||
-          Number(action.meta.arg?.limit) ||
-          state.pageSize;
+        state.records = (action.payload.records || []).map((r) => ({
+          ...r,
+          receivingLeadTime: r.receivingLeadTime ?? null,
+          forwardingLeadTime: r.forwardingLeadTime ?? null,
+        }));
+        state.currentPage = action.payload.currentPage || 1;
+        state.totalPages = action.payload.totalPages || 1;
+        state.totalRecords = action.payload.totalRecords || 0;
       })
       .addCase(fetchAllRecordsForAdmin.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // Add record
+      /* 🧩 ADD RECORD */
       .addCase(addRecord.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(addRecord.fulfilled, (state, action) => {
         state.loading = false;
-        state.records.unshift(action.payload);
+        const newRecord = {
+          ...action.payload,
+          receivingLeadTime: action.payload.receivingLeadTime ?? null,
+          forwardingLeadTime: action.payload.forwardingLeadTime ?? null,
+        };
+        state.records.unshift(newRecord);
         state.totalRecords += 1;
         state.message = "✅ Record added successfully";
       })
@@ -250,17 +252,21 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Update record
+      /* 🧩 UPDATE RECORD */
       .addCase(updateRecord.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(updateRecord.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.records.findIndex(
-          (r) => r._id === action.payload._id
-        );
-        if (index !== -1) state.records[index] = action.payload;
+        const updated = action.payload;
+        const index = state.records.findIndex((r) => r._id === updated._id);
+        if (index !== -1) {
+          state.records[index] = {
+            ...updated,
+            receivingLeadTime: updated.receivingLeadTime ?? null,
+            forwardingLeadTime: updated.forwardingLeadTime ?? null,
+          };
+        }
         state.message = "✅ Record updated successfully";
       })
       .addCase(updateRecord.rejected, (state, action) => {
@@ -268,10 +274,9 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Delete record
+      /* 🧩 DELETE RECORD */
       .addCase(deleteRecord.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(deleteRecord.fulfilled, (state, action) => {
         state.loading = false;
@@ -284,15 +289,25 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Bulk update
+      /* 🧩 BULK UPDATE DATE FORWARDED */
       .addCase(updateMultipleRecordsDateForwarded.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(
         updateMultipleRecordsDateForwarded.fulfilled,
         (state, action) => {
           state.loading = false;
+          const updatedRecords = action.payload.updatedRecords || [];
+          updatedRecords.forEach((updated) => {
+            const idx = state.records.findIndex((r) => r._id === updated._id);
+            if (idx !== -1) {
+              state.records[idx] = {
+                ...state.records[idx],
+                ...updated,
+                forwardingLeadTime: updated.forwardingLeadTime ?? null,
+              };
+            }
+          });
           state.message =
             action.payload.message || "✅ Records updated successfully";
         }
@@ -302,10 +317,9 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Dashboard stats
+      /* 🧩 DASHBOARD STATS */
       .addCase(fetchAdminDashboardStats.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchAdminDashboardStats.fulfilled, (state, action) => {
         state.loading = false;
@@ -316,16 +330,17 @@ const recordsSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Recent records
+      /* 🧩 RECENT RECORDS */
       .addCase(fetchRecentRecords.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchRecentRecords.fulfilled, (state, action) => {
         state.loading = false;
-        state.recentRecords = Array.isArray(action.payload.records)
-          ? action.payload.records
-          : [];
+        state.recentRecords = (action.payload.records || []).map((r) => ({
+          ...r,
+          receivingLeadTime: r.receivingLeadTime ?? null,
+          forwardingLeadTime: r.forwardingLeadTime ?? null,
+        }));
       })
       .addCase(fetchRecentRecords.rejected, (state, action) => {
         state.loading = false;

@@ -39,6 +39,19 @@ const RecordPage = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDate, setBulkDate] = useState("");
 
+  /* ---------------- Lead Time Calculations ---------------- */
+  const calcReceivingLead = (start, end) => {
+    if (!start || !end) return "";
+    const diff = new Date(end) - new Date(start);
+    return Math.abs(Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const calcForwardingLead = (start, end) => {
+    if (!start || !end) return "-";
+    const diff = new Date(end) - new Date(start);
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
   /* ---------------- Fetch Courts ---------------- */
   useEffect(() => {
     dispatch(fetchCourts());
@@ -57,13 +70,6 @@ const RecordPage = () => {
     );
   };
 
-  /* ---------------- Handle Filters ---------------- */
-  const handleFilterChange = (filterName, value) => {
-    dispatch(setFilters({ [filterName]: value }));
-    dispatch(setPage(1)); // reset to first page on filter change
-  };
-
-  // Refetch whenever filters, page, or pageSize change
   useEffect(() => {
     fetchRecords();
   }, [search, status, court, currentPage, pageSize]);
@@ -82,6 +88,11 @@ const RecordPage = () => {
   }, [message, error, dispatch]);
 
   /* ---------------- Handlers ---------------- */
+  const handleFilterChange = (filterName, value) => {
+    dispatch(setFilters({ [filterName]: value }));
+    dispatch(setPage(1));
+  };
+
   const handlePageChange = (newPage) => dispatch(setPage(newPage));
   const handlePageSizeChange = (newSize) => dispatch(setPageSize(newSize));
 
@@ -110,7 +121,8 @@ const RecordPage = () => {
 
   const handleBulkUpdate = () => {
     if (!bulkDate) return toast.warn("⚠️ Please select a date before updating.");
-    if (!selectedIds.length) return toast.warn("⚠️ Please select at least one record.");
+    if (!selectedIds.length)
+      return toast.warn("⚠️ Please select at least one record.");
 
     dispatch(updateMultipleRecordsDateForwarded({ ids: selectedIds, date: bulkDate }));
   };
@@ -119,7 +131,9 @@ const RecordPage = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen relative">
       <ToastContainer position="top-right" autoClose={3000} />
-      <h2 className="text-3xl font-bold mb-6 text-center text-[#0a2342]">📜 Judicial Records</h2>
+      <h2 className="text-3xl font-bold mb-6 text-center text-[#0a2342]">
+        📜 ORHC URITHI RECORDS
+      </h2>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
@@ -146,7 +160,9 @@ const RecordPage = () => {
         >
           <option value="All">All Courts</option>
           {courts.map((c) => (
-            <option key={c._id} value={c._id}>{c.name}</option>
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
           ))}
         </select>
       </div>
@@ -180,6 +196,7 @@ const RecordPage = () => {
             <p className="text-gray-600">Fetching records...</p>
           </div>
         )}
+
         {records.length === 0 ? (
           <p className="text-gray-500 text-center p-6">No records found.</p>
         ) : (
@@ -197,17 +214,21 @@ const RecordPage = () => {
                 <th className="border p-3 text-left">Cause No.</th>
                 <th className="border p-3 text-left">Name of Deceased</th>
                 <th className="border p-3 text-left">Date Received At PR</th>
-                <th className="border p-3 text-left">Date of Receipt</th>
-                <th className="border p-3 text-left">Lead Time (Days)</th>
+                <th className="border p-3 text-left">Date of E-Citizen Receipt</th>
+                <th className="border p-3 text-center">Receiving Lead To PR</th>
+                <th className="border p-3 text-left">Date Forwarded To GP</th>
+                <th className="border p-3 text-center">Forwarding Lead To GP</th>
                 <th className="border p-3 text-left">Form 60 Compliance</th>
-                <th className="border p-3 text-left">Reason For Rejection</th>
-                <th className="border p-3 text-left">Date Forwarded to G.P.</th>
+                <th className="border p-3 text-left">Rejection Reason</th>
                 <th className="border p-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {records.map((r, idx) => (
-                <tr key={r._id || idx} className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-100"} hover:bg-[#b48222]/10 transition`}>
+                <tr
+                  key={r._id || idx}
+                  className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-100"} hover:bg-[#b48222]/10 transition`}
+                >
                   <td className="border p-3">
                     <input
                       type="checkbox"
@@ -220,13 +241,16 @@ const RecordPage = () => {
                   <td className="border p-3 font-semibold text-[#0a2342]">{r.nameOfDeceased}</td>
                   <td className="border p-3">{r.dateReceived?.split("T")[0] || "N/A"}</td>
                   <td className="border p-3">{r.dateOfReceipt?.split("T")[0] || "N/A"}</td>
-                  <td className="border p-3">{r.leadTime}</td>
+                  <td className="border p-3 text-center">{calcReceivingLead(r.dateReceived, r.dateOfReceipt)}</td>
+                  <td className="border p-3">{r.dateForwardedToGP?.split("T")[0] || "N/A"}</td>
+                  <td className="border p-3 text-center">{calcForwardingLead(r.dateReceived, r.dateForwardedToGP)}</td>
                   <td className={`border p-3 font-medium ${
                     r.form60Compliance === "Approved" ? "text-green-700" :
                     r.form60Compliance === "Rejected" ? "text-red-700" : "text-yellow-600"
-                  }`}>{r.form60Compliance}</td>
+                  }`}>
+                    {r.form60Compliance}
+                  </td>
                   <td className="border p-3">{r.form60Compliance === "Rejected" ? r.rejectionReason || "N/A" : "-"}</td>
-                  <td className="border p-3">{r.dateForwardedToGP?.split("T")[0] || "N/A"}</td>
                   <td className="border p-3 text-center space-x-3">
                     <button onClick={() => handleEditClick(r)} className="text-[#0a2342] hover:underline">Edit</button>
                     <button onClick={() => handleDelete(r._id)} className="text-red-700 hover:underline">Delete</button>
@@ -242,16 +266,32 @@ const RecordPage = () => {
       <div className="flex justify-between items-center mt-6">
         <div>
           <label className="mr-2">Rows per page:</label>
-          <select value={pageSize} onChange={(e) => handlePageSizeChange(Number(e.target.value))} className="border rounded p-1">
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="border rounded p-1"
+          >
             {[10, 25, 30, 50, 100].map((num) => (
               <option key={num} value={num}>{num}</option>
             ))}
           </select>
         </div>
         <div className="flex space-x-2">
-          <button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)} className="px-3 py-1 border rounded disabled:opacity-50">Prev</button>
+          <button
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
           <span>Page {currentPage} of {totalPages || 1}</span>
-          <button disabled={currentPage >= (totalPages || 1)} onClick={() => handlePageChange(currentPage + 1)} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
+          <button
+            disabled={currentPage >= (totalPages || 1)}
+            onClick={() => handlePageChange(currentPage + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
 
@@ -261,7 +301,12 @@ const RecordPage = () => {
           <div className="bg-white w-96 rounded-lg shadow-lg p-6">
             <h3 className="text-xl font-bold mb-4 text-[#0a2342]">✏️ Edit Record</h3>
             <EditRecord record={selectedRecord} onClose={() => setEditMode(false)} />
-            <button onClick={() => setEditMode(false)} className="mt-4 bg-[#0a2342] text-white px-4 py-2 rounded-lg hover:bg-[#0a2342]/90">Close</button>
+            <button
+              onClick={() => setEditMode(false)}
+              className="mt-4 bg-[#0a2342] text-white px-4 py-2 rounded-lg hover:bg-[#0a2342]/90"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
