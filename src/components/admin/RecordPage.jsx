@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllRecordsForAdmin,
@@ -17,6 +17,9 @@ import EditRecord from "../../pages/admin/EditRecord";
 const RecordPage = () => {
   const dispatch = useDispatch();
 
+  /* =========================================================
+  🔹 Redux State
+  ========================================================= */
   const {
     records,
     totalRecords,
@@ -33,32 +36,31 @@ const RecordPage = () => {
 
   const { list: courts } = useSelector((state) => state.courts);
 
-  // Local state for modal & bulk update
+  /* =========================================================
+  🔹 Local State
+  ========================================================= */
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDate, setBulkDate] = useState("");
 
-  /* ---------------- Lead Time Calculations ---------------- */
-  const calcReceivingLead = (start, end) => {
+  /* =========================================================
+  🔹 Lead Time Calculations
+  ========================================================= */
+  const calcDaysBetween = (start, end) => {
     if (!start || !end) return "";
     const diff = new Date(end) - new Date(start);
     return Math.abs(Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
-  const calcForwardingLead = (start, end) => {
-    if (!start || !end) return "-";
-    const diff = new Date(end) - new Date(start);
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-
-  /* ---------------- Fetch Courts ---------------- */
+  /* =========================================================
+  🔹 Data Fetching
+  ========================================================= */
   useEffect(() => {
     dispatch(fetchCourts());
   }, [dispatch]);
 
-  /* ---------------- Fetch Records ---------------- */
-  const fetchRecords = () => {
+  const fetchRecords = useCallback(() => {
     dispatch(
       fetchAllRecordsForAdmin({
         page: currentPage,
@@ -68,13 +70,15 @@ const RecordPage = () => {
         court,
       })
     );
-  };
+  }, [dispatch, currentPage, pageSize, search, status, court]);
 
   useEffect(() => {
     fetchRecords();
-  }, [search, status, court, currentPage, pageSize]);
+  }, [fetchRecords]);
 
-  /* ---------------- Toast & Reset ---------------- */
+  /* =========================================================
+  🔹 Notifications
+  ========================================================= */
   useEffect(() => {
     if (message) {
       toast.success(message);
@@ -87,7 +91,9 @@ const RecordPage = () => {
     }
   }, [message, error, dispatch]);
 
-  /* ---------------- Handlers ---------------- */
+  /* =========================================================
+  🔹 Handlers
+  ========================================================= */
   const handleFilterChange = (filterName, value) => {
     dispatch(setFilters({ [filterName]: value }));
     dispatch(setPage(1));
@@ -127,10 +133,14 @@ const RecordPage = () => {
     dispatch(updateMultipleRecordsDateForwarded({ ids: selectedIds, date: bulkDate }));
   };
 
-  /* ---------------- UI ---------------- */
+  /* =========================================================
+  🔹 UI
+  ========================================================= */
   return (
-    <div className="p-6 bg-gray-50 min-h-screen relative">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <ToastContainer position="top-right" autoClose={3000} />
+
+      {/* Header */}
       <h2 className="text-3xl font-bold mb-6 text-center text-[#0a2342]">
         📜 ORHC URITHI RECORDS
       </h2>
@@ -142,21 +152,23 @@ const RecordPage = () => {
           placeholder="🔍 Search by Name or Cause No..."
           value={search}
           onChange={(e) => handleFilterChange("search", e.target.value)}
-          className="w-full md:w-1/3 p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+          className="w-full md:w-1/3 p-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#b48222]"
         />
+
         <select
           value={status}
           onChange={(e) => handleFilterChange("status", e.target.value)}
-          className="p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+          className="p-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#b48222]"
         >
           <option value="All">All Status</option>
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
         </select>
+
         <select
           value={court}
           onChange={(e) => handleFilterChange("court", e.target.value)}
-          className="p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b48222]"
+          className="p-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#b48222]"
         >
           <option value="All">All Courts</option>
           {courts.map((c) => (
@@ -185,14 +197,15 @@ const RecordPage = () => {
           </button>
         </div>
         <p className="text-sm text-gray-600">
-          Selected: {selectedIds.length} record{selectedIds.length !== 1 && "s"}
+          Selected: {selectedIds.length} record
+          {selectedIds.length !== 1 && "s"}
         </p>
       </div>
 
       {/* Records Table */}
       <div className="relative overflow-x-auto shadow-lg rounded-2xl border border-[#0a2342]/20">
         {loading && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
             <p className="text-gray-600">Fetching records...</p>
           </div>
         )}
@@ -200,60 +213,87 @@ const RecordPage = () => {
         {records.length === 0 ? (
           <p className="text-gray-500 text-center p-6">No records found.</p>
         ) : (
-          <table className="min-w-full border-collapse">
+          <table className="min-w-full border-collapse text-sm md:text-base">
             <thead className="bg-[#0a3b1f] text-white">
               <tr>
-                <th className="border p-3 text-left">
+                <th className="p-3">
                   <input
                     type="checkbox"
                     checked={selectedIds.length === records.length}
                     onChange={handleSelectAll}
                   />
                 </th>
-                <th className="border p-3 text-left">Court Station</th>
-                <th className="border p-3 text-left">Cause No.</th>
-                <th className="border p-3 text-left">Name of Deceased</th>
-                <th className="border p-3 text-left">Date Received At PR</th>
-                <th className="border p-3 text-left">Date of E-Citizen Receipt</th>
-                <th className="border p-3 text-center">Receiving Lead Time To PR</th>
-                <th className="border p-3 text-left">Date Forwarded To GP</th>
-                <th className="border p-3 text-center">Forwarding Lead Time To GP</th>
-                <th className="border p-3 text-left">Form 60 Compliance</th>
-                <th className="border p-3 text-left">Rejection Reason</th>
-                <th className="border p-3 text-left">Actions</th>
+                <th className="p-3 text-left">Court Station</th>
+                <th className="p-3 text-left">Cause No.</th>
+                <th className="p-3 text-left">Name of Deceased</th>
+                <th className="p-3 text-left">Date Received At PR</th>
+                <th className="p-3 text-left">Date of E-Citizen Receipt</th>
+                <th className="p-3 text-center">Receiving Lead Time (days)</th>
+                <th className="p-3 text-left">Date Forwarded To GP</th>
+                <th className="p-3 text-center">Forwarding Lead Time (days)</th>
+                <th className="p-3 text-left">Form 60 Compliance</th>
+                <th className="p-3 text-left">Rejection Reason</th>
+                <th className="p-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {records.map((r, idx) => (
                 <tr
                   key={r._id || idx}
-                  className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-100"} hover:bg-[#b48222]/10 transition`}
+                  className={`${
+                    idx % 2 === 0 ? "bg-white" : "bg-gray-100"
+                  } hover:bg-[#b48222]/10 transition`}
                 >
-                  <td className="border p-3">
+                  <td className="p-3">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(r._id)}
                       onChange={() => handleSelectRecord(r._id)}
                     />
                   </td>
-                  <td className="border p-3">{r.courtStation?.name || "N/A"}</td>
-                  <td className="border p-3">{r.causeNo}</td>
-                  <td className="border p-3 font-semibold text-[#0a2342]">{r.nameOfDeceased}</td>
-                  <td className="border p-3">{r.dateReceived?.split("T")[0] || "N/A"}</td>
-                  <td className="border p-3">{r.dateOfReceipt?.split("T")[0] || "N/A"}</td>
-                  <td className="border p-3 text-center">{calcReceivingLead(r.dateReceived, r.dateOfReceipt)}</td>
-                  <td className="border p-3">{r.dateForwardedToGP?.split("T")[0] || "N/A"}</td>
-                  <td className="border p-3 text-center">{calcForwardingLead(r.dateReceived, r.dateForwardedToGP)}</td>
-                  <td className={`border p-3 font-medium ${
-                    r.form60Compliance === "Approved" ? "text-green-700" :
-                    r.form60Compliance === "Rejected" ? "text-red-700" : "text-yellow-600"
-                  }`}>
+                  <td className="p-3">{r.courtStation?.name || "N/A"}</td>
+                  <td className="p-3">{r.causeNo}</td>
+                  <td className="p-3 font-semibold text-[#0a2342]">
+                    {r.nameOfDeceased}
+                  </td>
+                  <td className="p-3">{r.dateReceived?.split("T")[0] || "N/A"}</td>
+                  <td className="p-3">{r.dateOfReceipt?.split("T")[0] || "N/A"}</td>
+                  <td className="p-3 text-center">
+                    {calcDaysBetween(r.dateReceived, r.dateOfReceipt)}
+                  </td>
+                  <td className="p-3">{r.dateForwardedToGP?.split("T")[0] || "N/A"}</td>
+                  <td className="p-3 text-center">
+                    {calcDaysBetween(r.dateReceived, r.dateForwardedToGP)}
+                  </td>
+                  <td
+                    className={`p-3 font-medium ${
+                      r.form60Compliance === "Approved"
+                        ? "text-green-700"
+                        : r.form60Compliance === "Rejected"
+                        ? "text-red-700"
+                        : "text-yellow-600"
+                    }`}
+                  >
                     {r.form60Compliance}
                   </td>
-                  <td className="border p-3">{r.form60Compliance === "Rejected" ? r.rejectionReason || "N/A" : "-"}</td>
-                  <td className="border p-3 text-center space-x-3">
-                    <button onClick={() => handleEditClick(r)} className="text-[#0a2342] hover:underline">Edit</button>
-                    <button onClick={() => handleDelete(r._id)} className="text-red-700 hover:underline">Delete</button>
+                  <td className="p-3">
+                    {r.form60Compliance === "Rejected"
+                      ? r.rejectionReason || "N/A"
+                      : "-"}
+                  </td>
+                  <td className="p-3 space-x-3 text-center">
+                    <button
+                      onClick={() => handleEditClick(r)}
+                      className="text-[#0a2342] hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r._id)}
+                      className="text-red-700 hover:underline"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -272,11 +312,13 @@ const RecordPage = () => {
             className="border rounded p-1"
           >
             {[10, 25, 30, 50, 100].map((num) => (
-              <option key={num} value={num}>{num}</option>
+              <option key={num} value={num}>
+                {num}
+              </option>
             ))}
           </select>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 items-center">
           <button
             disabled={currentPage === 1}
             onClick={() => handlePageChange(currentPage - 1)}
@@ -284,7 +326,9 @@ const RecordPage = () => {
           >
             Prev
           </button>
-          <span>Page {currentPage} of {totalPages || 1}</span>
+          <span>
+            Page {currentPage} of {totalPages || 1}
+          </span>
           <button
             disabled={currentPage >= (totalPages || 1)}
             onClick={() => handlePageChange(currentPage + 1)}
@@ -297,13 +341,13 @@ const RecordPage = () => {
 
       {/* Edit Modal */}
       {editMode && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white w-96 rounded-lg shadow-lg p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-20">
+          <div className="bg-white w-[90%] md:w-[400px] rounded-lg shadow-lg p-6 relative">
             <h3 className="text-xl font-bold mb-4 text-[#0a2342]">✏️ Edit Record</h3>
             <EditRecord record={selectedRecord} onClose={() => setEditMode(false)} />
             <button
               onClick={() => setEditMode(false)}
-              className="mt-4 bg-[#0a2342] text-white px-4 py-2 rounded-lg hover:bg-[#0a2342]/90"
+              className="mt-4 bg-[#0a2342] text-white px-4 py-2 rounded hover:bg-[#0a2342]/90"
             >
               Close
             </button>
