@@ -3,7 +3,7 @@ import axios from "axios";
 
 // ✅ Create a reusable Axios instance
 const api = axios.create({
-  baseURL: "https://urithi.onrender.com//api/v1", // change to your backend URL
+  baseURL: "https://urithi.onrender.com/api/v1", // change to your backend URL
   withCredentials: true, // send cookies with every request
   headers: {
     "Content-Type": "application/json",
