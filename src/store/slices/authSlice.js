@@ -1,4 +1,4 @@
-// src/store/slices/authSlice.jsx
+// src/store/slices/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
@@ -9,18 +9,18 @@ const initialState = {
   user: null,
   users: [],
   isAuthenticated: false,
-  authLoading: false, // Loading for auth operations (login, loadUser, register)
-  usersLoading: false, // Loading for user management operations (fetch/delete)
+  authLoading: false,
+  usersLoading: false,
   error: null,
   message: null,
-  pendingEmail: null, // used during OTP verification
+  pendingEmail: null, // used for OTP verification
 };
 
 /* ==========================
    ASYNC THUNKS
 ========================== */
 
-// Auth Thunks
+// --- Register
 export const register = createAsyncThunk(
   "auth/register",
   async (formData, { rejectWithValue }) => {
@@ -33,6 +33,7 @@ export const register = createAsyncThunk(
   }
 );
 
+// --- Login
 export const login = createAsyncThunk(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
@@ -51,6 +52,19 @@ export const login = createAsyncThunk(
   }
 );
 
+// --- Logout
+export const logout = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
+  try {
+    await api.post("/auth/logout");
+    localStorage.removeItem("token");
+    return { message: "Logged out successfully" };
+  } catch (err) {
+    localStorage.removeItem("token");
+    return rejectWithValue(err.response?.data?.message || "Logout failed");
+  }
+});
+
+// --- Load User
 export const loadUser = createAsyncThunk(
   "auth/loadUser",
   async (_, { rejectWithValue }) => {
@@ -63,7 +77,46 @@ export const loadUser = createAsyncThunk(
   }
 );
 
-// Users Thunks
+// --- Forgot Password
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async (email, { rejectWithValue }) => {
+    try {
+      const res = await api.post("/auth/forgot-password", { email });
+      return { message: res.data.message };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to send reset link");
+    }
+  }
+);
+
+// --- Reset Password
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async ({ token, password }, { rejectWithValue }) => {
+    try {
+      const res = await api.post(`/auth/reset-password/${token}`, { password });
+      return { message: res.data.message };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to reset password");
+    }
+  }
+);
+
+// --- OTP Verification
+export const otpVerification = createAsyncThunk(
+  "auth/otpVerification",
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const res = await api.post("/auth/verify-otp", { email, otp });
+      return { message: res.data.message, success: true };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "OTP verification failed");
+    }
+  }
+);
+
+// --- Fetch All Users
 export const fetchAllUsers = createAsyncThunk(
   "auth/fetchAllUsers",
   async (_, { rejectWithValue }) => {
@@ -76,6 +129,7 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
+// --- Delete User
 export const deleteUser = createAsyncThunk(
   "auth/deleteUser",
   async (id, { rejectWithValue }) => {
@@ -105,10 +159,8 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // -------------------
-    // Auth actions
-    // -------------------
     builder
+      // --- Register
       .addCase(register.pending, (state) => {
         state.authLoading = true;
         state.error = null;
@@ -123,6 +175,7 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
+      // --- Login
       .addCase(login.pending, (state) => {
         state.authLoading = true;
         state.error = null;
@@ -138,6 +191,24 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
+      // --- Logout
+      .addCase(logout.pending, (state) => {
+        state.authLoading = true;
+      })
+      .addCase(logout.fulfilled, (state, action) => {
+        state.authLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.message = action.payload.message;
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.authLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload;
+      })
+
+      // --- Load User
       .addCase(loadUser.pending, (state) => {
         state.authLoading = true;
       })
@@ -153,9 +224,47 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
-      // -------------------
-      // Users actions
-      // -------------------
+      // --- Forgot Password
+      .addCase(forgotPassword.pending, (state) => {
+        state.authLoading = true;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.authLoading = false;
+        state.message = action.payload.message;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.authLoading = false;
+        state.error = action.payload;
+      })
+
+      // --- Reset Password
+      .addCase(resetPassword.pending, (state) => {
+        state.authLoading = true;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.authLoading = false;
+        state.message = action.payload.message;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.authLoading = false;
+        state.error = action.payload;
+      })
+
+      // --- OTP Verification
+      .addCase(otpVerification.pending, (state) => {
+        state.authLoading = true;
+      })
+      .addCase(otpVerification.fulfilled, (state, action) => {
+        state.authLoading = false;
+        state.message = action.payload.message;
+        state.pendingEmail = null;
+      })
+      .addCase(otpVerification.rejected, (state, action) => {
+        state.authLoading = false;
+        state.error = action.payload;
+      })
+
+      // --- Fetch Users
       .addCase(fetchAllUsers.pending, (state) => {
         state.usersLoading = true;
         state.error = null;
@@ -169,6 +278,7 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
+      // --- Delete User
       .addCase(deleteUser.pending, (state) => {
         state.usersLoading = true;
       })
@@ -187,17 +297,21 @@ const authSlice = createSlice({
 /* ==========================
    EXPORTS
 ========================== */
-export const { resetAuthState, clearPendingEmail } = authSlice.actions;
+export const {
+  resetAuthState,
+  clearPendingEmail,
+} = authSlice.actions;
+
 export default authSlice.reducer;
 
 /* ==========================
    SELECTORS
 ========================== */
 export const selectAuthUser = (state) => state.auth.user;
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectAuthLoading = (state) => state.auth.authLoading;
 export const selectUsersLoading = (state) => state.auth.usersLoading;
 export const selectAuthError = (state) => state.auth.error;
 export const selectAuthMessage = (state) => state.auth.message;
 export const selectAllUsers = (state) => state.auth.users;
-export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectPendingEmail = (state) => state.auth.pendingEmail;
