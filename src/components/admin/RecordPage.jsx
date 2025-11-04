@@ -142,7 +142,7 @@ const RecordPage = () => {
 
       {/* Header */}
       <h2 className="text-3xl font-bold mb-6 text-center text-[#0a2342]">
-        📜 ORHC URITHI RECORDS
+        📜 ORHC URITHI PORTAL
       </h2>
 
       {/* Filters */}
@@ -227,7 +227,7 @@ const RecordPage = () => {
                 <th className="p-3 text-left">Cause No.</th>
                 <th className="p-3 text-left">Name of Deceased</th>
                 <th className="p-3 text-left">Date Received At PR</th>
-                <th className="p-3 text-left">Date of E-Citizen Receipt</th>
+                <th className="p-3 text-left">Date On E-Citizen Receipt</th>
                 <th className="p-3 text-center">Receiving Lead Time (days)</th>
                 <th className="p-3 text-left">Date Forwarded To GP</th>
                 <th className="p-3 text-center">Forwarding Lead Time (days)</th>
