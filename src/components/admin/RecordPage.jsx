@@ -215,9 +215,9 @@ const RecordPage = () => {
                 <th className="border p-3 text-left">Name of Deceased</th>
                 <th className="border p-3 text-left">Date Received At PR</th>
                 <th className="border p-3 text-left">Date of E-Citizen Receipt</th>
-                <th className="border p-3 text-center">Receiving Lead To PR</th>
+                <th className="border p-3 text-center">Receiving Lead Time To PR</th>
                 <th className="border p-3 text-left">Date Forwarded To GP</th>
-                <th className="border p-3 text-center">Forwarding Lead To GP</th>
+                <th className="border p-3 text-center">Forwarding Lead Time To GP</th>
                 <th className="border p-3 text-left">Form 60 Compliance</th>
                 <th className="border p-3 text-left">Rejection Reason</th>
                 <th className="border p-3 text-left">Actions</th>

@@ -91,10 +91,7 @@ export const updateMultipleRecordsDateForwarded = createAsyncThunk(
   "records/updateMultipleRecordsDateForwarded",
   async ({ ids, date }, { rejectWithValue }) => {
     try {
-      const res = await api.patch("/records/bulk-update-forwarded", {
-        ids,
-        date,
-      });
+      const res = await api.patch("/records/bulk-update-forwarded", { ids, date });
       return res.data; // backend returns updated records or message
     } catch (err) {
       return rejectWithValue(
@@ -104,12 +101,13 @@ export const updateMultipleRecordsDateForwarded = createAsyncThunk(
   }
 );
 
-// Dashboard stats
+// Dashboard stats (weekly + monthly)
 export const fetchAdminDashboardStats = createAsyncThunk(
   "records/fetchDashboardStats",
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get("/records/dashboard-stats");
+      // expected shape: { totalRecords, approved, rejected, weekly, monthly }
       return res.data;
     } catch (err) {
       return rejectWithValue(
@@ -147,7 +145,13 @@ const initialState = {
   search: "",
   court: "All",
   status: "All",
-  dashboardStats: null,
+  dashboardStats: {
+    totalRecords: 0,
+    approved: 0,
+    rejected: 0,
+    weekly: [],   // last 6 weeks
+    monthly: [],  // last 6 months
+  },
   recentRecords: [],
   loading: false,
   error: null,
@@ -284,6 +288,7 @@ const recordsSlice = createSlice({
         state.totalRecords = Math.max(0, state.totalRecords - 1);
         state.message = "🗑️ Record deleted successfully";
       })
+
       .addCase(deleteRecord.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
