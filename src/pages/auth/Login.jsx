@@ -60,7 +60,7 @@ const Login = () => {
           <div className="text-center space-y-6">
             <h2 className="text-3xl font-bold tracking-wide">
               Welcome to the{" "}
-              <span className="text-[#b48222]">Principal Registry</span>
+              <span className="text-[#b48222]">ORHC</span>
             </h2>
             <p className="text-green-100 text-sm max-w-md mx-auto">
               Access the official registry system to manage and track legal
@@ -130,12 +130,7 @@ const Login = () => {
                 />
                 <span className="ml-2 select-none">Remember me</span>
               </label>
-              <Link
-                to="/forgot-password"
-                className="font-medium text-[#b48222] hover:text-[#0a3b1f] hover:underline transition duration-150 ease-in-out"
-              >
-                Forgot password?
-              </Link>
+              
             </div>
 
             <button
@@ -177,15 +172,7 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="text-center text-sm text-gray-500 mt-5">
-            <span>Don’t have an account?</span>{" "}
-            <Link
-              to="/register"
-              className="text-[#b48222] hover:underline font-medium"
-            >
-              Register
-            </Link>
-          </div>
+          
         </div>
       </div>
     </div>

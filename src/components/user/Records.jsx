@@ -1,71 +1,135 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRecords } from "../../store/slices/recordsSlice";
+import { fetchCourts } from "../../store/slices/courtSlice";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Records = () => {
   const dispatch = useDispatch();
-  const { records, loading, error } = useSelector((state) => state.records);
 
-  const [search, setSearch] = useState("");
+  /* =========================================================
+  🔹 Redux State
+  ========================================================= */
+  const { records, loading, error, search, court, status } = useSelector(
+    (state) => state.records
+  );
+  const { list: courts } = useSelector((state) => state.courts);
+
+  /* =========================================================
+  🔹 Local State
+  ========================================================= */
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterCourt, setFilterCourt] = useState("All");
 
-  // Fetch records
+  /* =========================================================
+  🔹 Data Fetching
+  ========================================================= */
   useEffect(() => {
+    dispatch(fetchCourts());
+  }, [dispatch]);
+
+  const fetchData = useCallback(() => {
     dispatch(fetchRecords());
   }, [dispatch]);
 
-  // Show error toasts
   useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
+    fetchData();
+  }, [fetchData]);
+
+  /* =========================================================
+  🔹 Notifications
+  ========================================================= */
+  useEffect(() => {
+    if (error) toast.error(error);
   }, [error]);
 
-  // Filter
+  /* =========================================================
+  🔹 Filtering Logic
+  ========================================================= */
   const filteredRecords = records.filter((r) => {
-    return (
-      r.nameOfDeceased?.toLowerCase().includes(search.toLowerCase()) ||
-      r.causeNo?.toLowerCase().includes(search.toLowerCase())
-    );
+    const matchesSearch =
+      r.nameOfDeceased?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.causeNo?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      filterStatus === "All" || r.form60Compliance === filterStatus;
+
+    const matchesCourt =
+      filterCourt === "All" || r.courtStation?._id === filterCourt;
+
+    return matchesSearch && matchesStatus && matchesCourt;
   });
 
-  if (loading) return <p className="p-4 text-judicial-green">Loading records...</p>;
-
+  /* =========================================================
+  🔹 UI
+  ========================================================= */
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      <h2 className="text-3xl font-bold mb-6 text-center text-judicial-green">
-        ⚖️ Records
+      {/* Header */}
+      <h2 className="text-3xl font-bold mb-6 text-center text-[#0a2342]">
+        ⚖️ URITHI 
       </h2>
 
-      {/* Search */}
-      <div className="mb-4">
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
         <input
           type="text"
           placeholder="🔍 Search by Name or Cause No..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full md:w-1/2 p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-judicial-gold"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full md:w-1/3 p-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#b48222]"
         />
+
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="p-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#b48222]"
+        >
+          <option value="All">All Status</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Pending">Pending</option>
+        </select>
+
+        <select
+          value={filterCourt}
+          onChange={(e) => setFilterCourt(e.target.value)}
+          className="p-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#b48222]"
+        >
+          <option value="All">All Courts</option>
+          {courts.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Records Table */}
-      {filteredRecords.length === 0 ? (
-        <p className="text-gray-500 text-center">No matching records found.</p>
-      ) : (
-        <div className="overflow-x-auto shadow-lg rounded-2xl">
-          <table className="min-w-full border-collapse">
-            <thead className="bg-gradient-to-r from-judicial-green/90 to-judicial-gold/80">
+      <div className="relative overflow-x-auto shadow-lg rounded-2xl border border-[#0a2342]/20">
+        {loading && (
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+            <p className="text-gray-600">Fetching records...</p>
+          </div>
+        )}
+
+        {filteredRecords.length === 0 ? (
+          <p className="text-gray-500 text-center p-6">No records found.</p>
+        ) : (
+          <table className="min-w-full border-collapse text-sm md:text-base">
+            <thead className="bg-[#0a3b1f] text-white">
               <tr>
-                <th className="border p-3 text-left text-white">Court Station</th>
-                <th className="border p-3 text-left text-white">Cause No.</th>
-                <th className="border p-3 text-left text-white">Name of Deceased</th>
-                <th className="border p-3 text-left text-white">Form 60 Compliance</th>
-                <th className="border p-3 text-left text-white">Reason For Rejection</th>
-                <th className="border p-3 text-left text-white">Date Forwarded to G.P</th>
+                <th className="p-3 text-left">Court Station</th>
+                <th className="p-3 text-left">Cause No.</th>
+                <th className="p-3 text-left">Name of Deceased</th>
+                <th className="p-3 text-left">Form 60 Compliance</th>
+                <th className="p-3 text-left">Rejection Reason</th>
+                <th className="p-3 text-left">Date Forwarded To GP</th>
               </tr>
             </thead>
             <tbody>
@@ -73,68 +137,70 @@ const Records = () => {
                 <tr
                   key={r._id || idx}
                   className={`${
-                    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-judicial-gold/10 transition`}
+                    idx % 2 === 0 ? "bg-white" : "bg-gray-100"
+                  } hover:bg-[#b48222]/10 transition`}
                 >
-                  <td className="border p-3">{r.courtStation?.name || "N/A"}</td>
-                  <td className="border p-3">{r.causeNo}</td>
-                  <td className="border p-3">{r.nameOfDeceased}</td>
+                  <td className="p-3">{r.courtStation?.name || "N/A"}</td>
+                  <td className="p-3">{r.causeNo}</td>
+                  <td className="p-3 font-semibold text-[#0a2342]">
+                    {r.nameOfDeceased}
+                  </td>
                   <td
-                    className={`border p-3 font-medium ${
+                    className={`p-3 font-medium ${
                       r.form60Compliance === "Approved"
-                        ? "text-judicial-green"
+                        ? "text-green-700"
                         : r.form60Compliance === "Rejected"
-                        ? "text-red-600"
-                        : "text-judicial-gold"
+                        ? "text-red-700"
+                        : "text-yellow-600"
                     }`}
                   >
-                    {r.form60Compliance}
+                    {r.form60Compliance || "Pending"}
                   </td>
-                  <td className="border p-3 text-center">
-                    {r.form60Compliance === "Rejected" && (
+                  <td className="p-3">
+                    {r.form60Compliance === "Rejected" ? (
                       <button
                         onClick={() => setSelectedRecord(r)}
-                        className="text-judicial-green hover:underline"
+                        className="text-[#0a2342] hover:underline"
                       >
                         View Reason
                       </button>
+                    ) : (
+                      "-"
                     )}
                   </td>
-                  <td className="border p-3">
-                    {r.dateForwardedToGP ? r.dateForwardedToGP.split("T")[0] : "N/A"}
+                  <td className="p-3">
+                    {r.dateForwardedToGP?.split("T")[0] || "N/A"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Rejection Reason Modal */}
       {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-red-500 bg-white p-6 shadow-2xl transition-all duration-300 ease-in-out sm:w-96">
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-extrabold tracking-tight text-red-600">
-                Rejection Reason
-              </h3>
-              <span className="text-3xl" role="img" aria-label="cross-mark">
-                ❌
-              </span>
-            </div>
-            <hr className="my-4 border-t-2 border-red-200" />
-            <div className="flex flex-col gap-4">
-              <p className="text-base text-gray-800 leading-relaxed">
-                {selectedRecord.rejectionReason ||
-                  "No reason was provided for this rejection."}
-              </p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-20">
+          <div className="bg-white w-[90%] md:w-[400px] rounded-lg shadow-lg p-6 relative">
+            <h3 className="text-xl font-bold mb-4 text-red-700 flex items-center justify-between">
+              <span>❌ Rejection Reason</span>
               <button
                 onClick={() => setSelectedRecord(null)}
-                className="mt-2 w-full rounded-full bg-judicial-green px-6 py-3 text-lg font-semibold text-white transition-all duration-300 ease-in-out hover:bg-judicial-green/90 focus:outline-none focus:ring-4 focus:ring-judicial-gold/50"
+                className="text-gray-500 hover:text-gray-700 text-xl"
               >
-                Got It
+                ✖
               </button>
-            </div>
+            </h3>
+            <p className="text-gray-800 leading-relaxed">
+              {selectedRecord.rejectionReason ||
+                "No reason provided for this rejection."}
+            </p>
+            <button
+              onClick={() => setSelectedRecord(null)}
+              className="mt-6 w-full bg-[#0a2342] text-white px-4 py-2 rounded hover:bg-[#0a2342]/90"
+            >
+              Got It
+            </button>
           </div>
         </div>
       )}
