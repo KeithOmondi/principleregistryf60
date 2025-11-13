@@ -49,7 +49,9 @@ export const addRecord = createAsyncThunk(
       const res = await api.post("/records/create", payload);
       return res.data.record || res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to add record");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to add record"
+      );
     }
   }
 );
@@ -62,7 +64,9 @@ export const updateRecord = createAsyncThunk(
       const res = await api.put(`/records/update/${id}`, data);
       return res.data.record || res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to update record");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to update record"
+      );
     }
   }
 );
@@ -75,7 +79,9 @@ export const deleteRecord = createAsyncThunk(
       await api.delete(`/records/delete/${id}`);
       return id;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to delete record");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to delete record"
+      );
     }
   }
 );
@@ -85,10 +91,15 @@ export const updateMultipleRecordsDateForwarded = createAsyncThunk(
   "records/updateMultipleRecordsDateForwarded",
   async ({ ids, date }, { rejectWithValue }) => {
     try {
-      const res = await api.patch("/records/bulk-update-forwarded", { ids, date });
+      const res = await api.patch("/records/bulk-update-forwarded", {
+        ids,
+        date,
+      });
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to update records");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to update records"
+      );
     }
   }
 );
@@ -101,7 +112,9 @@ export const fetchAdminDashboardStats = createAsyncThunk(
       const res = await api.get("/records/dashboard-stats");
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch dashboard stats");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to fetch dashboard stats"
+      );
     }
   }
 );
@@ -114,7 +127,26 @@ export const fetchRecentRecords = createAsyncThunk(
       const res = await api.get("/records/recent");
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "❌ Failed to fetch recent records");
+      return rejectWithValue(
+        err.response?.data?.message || "❌ Failed to fetch recent records"
+      );
+    }
+  }
+);
+
+// 🧩 Fetch Monthly Report (HTML only, Admin)
+export const fetchMonthlyReport = createAsyncThunk(
+  "records/fetchMonthlyReport",
+  async ({ month, year }, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/records/monthly-report", {
+        params: { month, year },
+      });
+      return res.data; // raw HTML
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || "❌ Failed to fetch monthly report"
+      );
     }
   }
 );
@@ -133,6 +165,7 @@ const normalizeRecords = (records = []) =>
 /* ============================================================
 🔹 INITIAL STATE
 ============================================================ */
+
 const initialState = {
   records: [],
   selectedRecord: null,
@@ -151,6 +184,7 @@ const initialState = {
     monthly: [],
   },
   recentRecords: [],
+  monthlyReportHTML: "", // new
   loading: false,
   error: null,
   message: null,
@@ -159,6 +193,7 @@ const initialState = {
 /* ============================================================
 🔹 SLICE
 ============================================================ */
+
 const recordsSlice = createSlice({
   name: "records",
   initialState,
@@ -264,7 +299,9 @@ const recordsSlice = createSlice({
       })
       .addCase(updateRecord.fulfilled, (state, action) => {
         state.loading = false;
-        const idx = state.records.findIndex((r) => r._id === action.payload._id);
+        const idx = state.records.findIndex(
+          (r) => r._id === action.payload._id
+        );
         if (idx !== -1) {
           state.records[idx] = {
             ...action.payload,
@@ -303,21 +340,25 @@ const recordsSlice = createSlice({
       .addCase(updateMultipleRecordsDateForwarded.pending, (state) => {
         state.loading = true;
       })
-      .addCase(updateMultipleRecordsDateForwarded.fulfilled, (state, action) => {
-        state.loading = false;
-        const updated = action.payload.updatedRecords || [];
-        updated.forEach((rec) => {
-          const idx = state.records.findIndex((r) => r._id === rec._id);
-          if (idx !== -1) {
-            state.records[idx] = {
-              ...state.records[idx],
-              ...rec,
-              forwardingLeadTime: rec.forwardingLeadTime ?? null,
-            };
-          }
-        });
-        state.message = action.payload.message || "✅ Records updated successfully";
-      })
+      .addCase(
+        updateMultipleRecordsDateForwarded.fulfilled,
+        (state, action) => {
+          state.loading = false;
+          const updated = action.payload.updatedRecords || [];
+          updated.forEach((rec) => {
+            const idx = state.records.findIndex((r) => r._id === rec._id);
+            if (idx !== -1) {
+              state.records[idx] = {
+                ...state.records[idx],
+                ...rec,
+                forwardingLeadTime: rec.forwardingLeadTime ?? null,
+              };
+            }
+          });
+          state.message =
+            action.payload.message || "✅ Records updated successfully";
+        }
+      )
       .addCase(updateMultipleRecordsDateForwarded.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -349,6 +390,23 @@ const recordsSlice = createSlice({
         state.recentRecords = normalizeRecords(action.payload.records);
       })
       .addCase(fetchRecentRecords.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      /* =====================================================
+      🧩 MONTHLY REPORT HTML
+      ===================================================== */
+      .addCase(fetchMonthlyReport.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.monthlyReportHTML = "";
+      })
+      .addCase(fetchMonthlyReport.fulfilled, (state, action) => {
+        state.loading = false;
+        state.monthlyReportHTML = action.payload;
+      })
+      .addCase(fetchMonthlyReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

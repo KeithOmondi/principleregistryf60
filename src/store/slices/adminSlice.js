@@ -2,9 +2,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
-// ==================== THUNKS ====================
+/* ============================================================
+🧾 THUNKS
+============================================================ */
 
-// Fetch overall, weekly, and monthly stats for admin dashboard
+// 1️⃣ Fetch overall, weekly, and monthly stats for admin dashboard
 export const fetchAdminStats = createAsyncThunk(
   "admin/fetchStats",
   async (_, { rejectWithValue }) => {
@@ -20,7 +22,7 @@ export const fetchAdminStats = createAsyncThunk(
   }
 );
 
-// Fetch recent records for the table
+// 2️⃣ Fetch recent records for the table
 export const fetchRecentRecords = createAsyncThunk(
   "admin/fetchRecentRecords",
   async (_, { rejectWithValue }) => {
@@ -35,37 +37,23 @@ export const fetchRecentRecords = createAsyncThunk(
   }
 );
 
-// Download monthly report (CSV)
-export const downloadMonthlyReport = createAsyncThunk(
-  "admin/downloadMonthlyReport",
+// 3️⃣ View monthly report (opens HTML printable in new tab)
+export const viewMonthlyReport = createAsyncThunk(
+  "admin/viewMonthlyReport",
   async ({ month, year }, { rejectWithValue }) => {
     try {
-      const res = await api.get(
-        `/records/monthly-report?month=${month}&year=${year}`,
-        {
-          responseType: "blob",
-        }
-      );
-
-      // Trigger download
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Monthly_Report_${month}-${year}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
+      const reportUrl = `/records/monthly-report?month=${month}&year=${year}`;
+      window.open(reportUrl, "_blank");
       return { success: true };
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || "Failed to download report"
-      );
+      return rejectWithValue("Failed to open monthly report");
     }
   }
 );
 
-// ==================== SLICE ====================
+/* ============================================================
+🏗️ SLICE
+============================================================ */
 
 const initialState = {
   totalRecords: 0,
@@ -85,7 +73,7 @@ const adminSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    // Fetch Admin Stats
+    /* ----- FETCH ADMIN STATS ----- */
     builder
       .addCase(fetchAdminStats.pending, (state) => {
         state.loading = true;
@@ -106,7 +94,7 @@ const adminSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Fetch Recent Records
+    /* ----- FETCH RECENT RECORDS ----- */
     builder
       .addCase(fetchRecentRecords.pending, (state) => {
         state.loading = true;
@@ -121,16 +109,16 @@ const adminSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Download Monthly Report
+    /* ----- VIEW MONTHLY REPORT (HTML) ----- */
     builder
-      .addCase(downloadMonthlyReport.pending, (state) => {
+      .addCase(viewMonthlyReport.pending, (state) => {
         state.reportDownloading = true;
         state.reportError = null;
       })
-      .addCase(downloadMonthlyReport.fulfilled, (state) => {
+      .addCase(viewMonthlyReport.fulfilled, (state) => {
         state.reportDownloading = false;
       })
-      .addCase(downloadMonthlyReport.rejected, (state, action) => {
+      .addCase(viewMonthlyReport.rejected, (state, action) => {
         state.reportDownloading = false;
         state.reportError = action.payload;
       });
